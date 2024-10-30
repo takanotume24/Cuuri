@@ -20,14 +20,20 @@
   </div>
 </template>
 
-<script>
-import { invoke } from "@tauri-apps/api/core";
+<script lang="ts">
+import { defineComponent } from 'vue';
+import { invoke } from '@tauri-apps/api/core';
 
-export default {
+interface ChatEntry {
+  question: string;
+  answer: string;
+}
+
+export default defineComponent({
   data() {
     return {
       input: '',
-      chatHistory: [],
+      chatHistory: [] as ChatEntry[],
     };
   },
   methods: {
@@ -35,7 +41,7 @@ export default {
       if (this.input.trim() === '') return;
 
       try {
-        const res = await invoke('chat_gpt', { message: this.input });
+        const res = await invoke<string>('chat_gpt', { message: this.input });
         this.chatHistory.push({ question: this.input, answer: res });
         this.input = ''; // Clear the input after sending
       } catch (error) {
@@ -43,7 +49,7 @@ export default {
       }
     },
   },
-};
+});
 </script>
 
 <style scoped>
