@@ -3,10 +3,11 @@ use reqwest::Client;
 use serde_json::json;
 use sqlx::migrate::MigrateDatabase;
 use sqlx::{sqlite::Sqlite, Row, SqlitePool};
+use std::collections::HashMap;
 use std::env;
 use tauri::async_runtime::block_on;
 use tauri::State;
-use std::collections::HashMap;
+use uuid::Uuid;
 
 struct ApiKey(String);
 
@@ -20,6 +21,7 @@ impl Database {
 
 #[tauri::command]
 async fn chat_gpt(
+    session_id: String,
     message: String,
     state: State<'_, ApiKey>,
     db: State<'_, Database>,
@@ -45,7 +47,8 @@ async fn chat_gpt(
         .ok_or("No response from API".to_string())?;
 
     let pool = db.pool();
-    sqlx::query("INSERT INTO chat_history (question, answer) VALUES (?, ?)")
+    sqlx::query("INSERT INTO chat_history (session_id, question, answer) VALUES (?, ?, ?)")
+        .bind(&session_id)
         .bind(&message)
         .bind(&response)
         .execute(pool)
@@ -56,13 +59,17 @@ async fn chat_gpt(
 }
 
 #[tauri::command]
-async fn get_chat_history(db: State<'_, Database>) -> Result<Vec<HashMap<String, String>>, String> {
+async fn get_chat_history(
+    db: State<'_, Database>,
+) -> Result<Vec<HashMap<String, String>>, String> {
     let pool = db.pool();
-    let rows = sqlx::query("SELECT question, answer FROM chat_history")
+    let rows = sqlx::query("SELECT session_id, question, answer FROM chat_history")
         .map(|row: sqlx::sqlite::SqliteRow| {
+            let session_id: String = row.get("session_id");
             let question: String = row.get("question");
             let answer: String = row.get("answer");
             let mut map = HashMap::new();
+            map.insert("session_id".to_string(), session_id);
             map.insert("question".to_string(), question);
             map.insert("answer".to_string(), answer);
             map
@@ -74,6 +81,10 @@ async fn get_chat_history(db: State<'_, Database>) -> Result<Vec<HashMap<String,
     Ok(rows)
 }
 
+#[tauri::command]
+fn generate_session_id() -> String {
+    Uuid::new_v4().to_string() // Using UUIDv4 for simplicity
+}
 
 pub fn run() {
     dotenv().ok();
@@ -98,10 +109,17 @@ pub fn run() {
     });
 
     let db_pool = block_on(async {
-        let pool = SqlitePool::connect(&database_url).await.expect("Failed to create database pool");
+        let pool = SqlitePool::connect(&database_url)
+            .await
+            .expect("Failed to create database pool");
 
         sqlx::query(
-            "CREATE TABLE IF NOT EXISTS chat_history (id INTEGER PRIMARY KEY, question TEXT, answer TEXT)",
+            "CREATE TABLE IF NOT EXISTS chat_history (
+                id INTEGER PRIMARY KEY, 
+                session_id TEXT, 
+                question TEXT, 
+                answer TEXT
+            )",
         )
         .execute(&pool)
         .await
@@ -113,7 +131,11 @@ pub fn run() {
     tauri::Builder::default()
         .manage(ApiKey(api_key))
         .manage(Database(db_pool))
-        .invoke_handler(tauri::generate_handler![chat_gpt, get_chat_history])
+        .invoke_handler(tauri::generate_handler![
+            chat_gpt,
+            get_chat_history,
+            generate_session_id
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
