@@ -1,25 +1,41 @@
 <template>
   <div id="app">
-    <header>
-      <div id="chat-history">
-        <div v-for="(entry, index) in chatHistory" :key="index" class="chat-entry">
-          <div class="user-message"><strong>You:</strong> {{ entry.question }}</div>
-          <div class="gpt-response" v-html="entry.markdownHtml"></div>
+    <aside id="chat-sessions">
+      <ul>
+        <li
+          v-for="(session, index) in chatSessions"
+          :key="index"
+          :class="{ active: currentSessionIndex === index }"
+          @click="loadSession(index)"
+        >
+          Chat Session {{ index + 1 }}
+        </li>
+      </ul>
+      <button @click="createNewSession">New Session</button>
+    </aside>
+    <main>
+      <header>
+        <div id="chat-history">
+          <div v-for="(entry, index) in chatHistory" :key="index" class="chat-entry">
+            <div class="user-message"><strong>You:</strong> {{ entry.question }}</div>
+            <div class="gpt-response" v-html="entry.markdownHtml"></div>
+          </div>
         </div>
-      </div>
-      <form @submit.prevent="handleSubmit" class="input-form">
-        <textarea
-          v-model="input"
-          placeholder="Ask ChatGPT..."
-          rows="4"
-          cols="50"
-          @keydown="checkCtrlEnter"
-        ></textarea>
-        <button type="submit">Send</button>
-      </form>
-    </header>
+        <form @submit.prevent="handleSubmit" class="input-form">
+          <textarea
+            v-model="input"
+            placeholder="Ask ChatGPT..."
+            rows="4"
+            cols="50"
+            @keydown="checkCtrlEnter"
+          ></textarea>
+          <button type="submit">Send</button>
+        </form>
+      </header>
+    </main>
   </div>
 </template>
+
 
 <script lang="ts">
 import { defineComponent } from 'vue';
@@ -36,8 +52,14 @@ export default defineComponent({
   data() {
     return {
       input: '',
-      chatHistory: [] as ChatEntry[],
+      chatSessions: [[] as ChatEntry[]],
+      currentSessionIndex: 0,
     };
+  },
+  computed: {
+    chatHistory() {
+      return this.chatSessions[this.currentSessionIndex];
+    }
   },
   methods: {
     async handleSubmit() {
@@ -46,7 +68,7 @@ export default defineComponent({
       try {
         const res: string = await invoke('chat_gpt', { message: this.input });
         const markdownHtml: string = await this.renderMarkdown(res);
-        this.chatHistory.push({ question: this.input, answer: res, markdownHtml });
+        this.chatSessions[this.currentSessionIndex].push({ question: this.input, answer: res, markdownHtml });
         this.input = ''; // Clear the input after sending
       } catch (error) {
         console.error('Error calling API:', error);
@@ -60,40 +82,67 @@ export default defineComponent({
     async renderMarkdown(markdownText: string): Promise<string> {
       return Promise.resolve(marked(markdownText));
     },
+    loadSession(index: number) {
+      this.currentSessionIndex = index;
+    },
+    createNewSession() {
+      this.chatSessions.push([]);
+      this.currentSessionIndex = this.chatSessions.length - 1;
+    }
   },
 });
 </script>
 
 <style scoped>
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-  position: relative;
-  min-height: 100vh;
-  padding-bottom: 120px; /* Height of the fixed form */
-  box-sizing: border-box;
+  display: flex;
 }
 
-textarea {
-  width: 100%;
-  max-width: 600px;
-  height: 100px;
-  margin-bottom: 10px;
+aside#chat-sessions {
+  width: 200px;
+  background-color: #e0e0e0;
+  border-right: 1px solid #ddd;
   padding: 10px;
-  font-size: 16px;
-  font-family: inherit;
   box-sizing: border-box;
+  position: relative;
+  height: 100vh;
+}
+
+aside#chat-sessions ul {
+  list-style-type: none;
+  padding: 60px 0 0;
+  margin: 0;
+}
+
+aside#chat-sessions li {
+  padding: 10px;
+  cursor: pointer;
+}
+
+aside#chat-sessions li.active {
+  background-color: #dcdcdc;
+  font-weight: bold;
+}
+
+aside#chat-sessions button {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+main {
+  flex: 1;
+  padding: 20px;
 }
 
 #chat-history {
   margin-bottom: 20px;
   text-align: left;
   overflow-y: auto;
-  max-height: calc(100vh - 180px); /* Adjust max-height for scrolling */
+  max-height: calc(100vh - 180px);
 }
 
 .chat-entry {
@@ -113,8 +162,8 @@ textarea {
 .input-form {
   position: fixed;
   bottom: 0;
-  left: 0;
-  width: 100%;
+  left: 220px;
+  width: calc(100% - 240px); /* 左右に20pxずつの余白を確保 */
   background-color: #fff;
   padding: 10px;
   box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
