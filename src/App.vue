@@ -61,17 +61,40 @@ export default defineComponent({
       return this.chatSessions[this.currentSessionIndex];
     }
   },
+  mounted() {
+    this.loadChatHistory();
+  },
   methods: {
     async handleSubmit() {
       if (this.input.trim() === '') return;
 
       try {
         const res: string = await invoke('chat_gpt', { message: this.input });
-        const markdownHtml: string = await this.renderMarkdown(res);
+        const markdownHtml: string = await this.renderMarkdown(res); // Use await to resolve the promise
         this.chatSessions[this.currentSessionIndex].push({ question: this.input, answer: res, markdownHtml });
-        this.input = ''; // Clear the input after sending
+        await this.saveChatEntry(this.input, res);
+        this.input = ''; // Clear the input after saving
       } catch (error) {
         console.error('Error calling API:', error);
+      }
+    },
+    async loadChatHistory() {
+      try {
+        const history: Array<{ question: string, answer: string }> = await invoke('get_chat_history');
+        console.log(history)
+        history.forEach(async (entry) => {
+          if (entry.answer == null) {
+            return
+          }
+          const markdownHtml = await this.renderMarkdown(entry.answer); // Use await to resolve the promise
+          this.chatSessions[this.currentSessionIndex].push({
+            question: entry.question,
+            answer: entry.answer,
+            markdownHtml
+          });
+        });
+      } catch (error) {
+        console.error('Failed to load chat history:', error);
       }
     },
     checkCtrlEnter(event: KeyboardEvent) {
@@ -88,10 +111,15 @@ export default defineComponent({
     createNewSession() {
       this.chatSessions.push([]);
       this.currentSessionIndex = this.chatSessions.length - 1;
+    },
+    async saveChatEntry(question: string, answer: string) {
+      // This function can be used to save the chat entry to the database or perform any additional processing
     }
   },
 });
 </script>
+
+
 
 <style scoped>
 #app {
