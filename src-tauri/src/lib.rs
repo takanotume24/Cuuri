@@ -113,8 +113,8 @@ async fn chat_gpt(
 
     let client = reqwest::Client::new();
     let request_body = json!({
-        "model": "gpt-3.5-turbo",
-        "messages": messages,
+        "model": model, // Use the selected model
+        "messages": [{"role": "user", "content": message}],
     });
 
     let res = client

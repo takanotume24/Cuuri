@@ -82,22 +82,19 @@ export default defineComponent({
       if (this.input.trim() === '') return;
 
       try {
-        const res = await invoke<string>('chat_gpt', {
+        const res: string = await invoke('chat_gpt', {
           inputSessionId: this.currentSessionId,
           message: this.input,
+          model: this.selectedModel // Pass the selected model
         });
-        const markdownHtml = await this.renderMarkdown(res);
+        const markdownHtml: string = await this.renderMarkdown(res);
 
         if (!this.chatSessions[this.currentSessionId]) {
           this.chatSessions[this.currentSessionId] = [];
         }
 
-        this.chatSessions[this.currentSessionId].push({
-          question: this.input,
-          answer: res,
-          markdownHtml,
-        });
-        this.input = ''; // Clear the input after saving
+        this.chatSessions[this.currentSessionId].push({ question: this.input, answer: res, markdownHtml });
+        this.input = '';
         this.$nextTick(() => {
           this.scrollToBottom();
         });
