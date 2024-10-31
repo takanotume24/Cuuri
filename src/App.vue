@@ -3,12 +3,12 @@
     <aside id="chat-sessions">
       <ul>
         <li
-          v-for="(session, index) in chatSessions"
-          :key="index"
-          :class="{ active: currentSessionIndex === index }"
-          @click="loadSession(index)"
+          v-for="(session, sessionId) in chatSessions"
+          :key="sessionId"
+          :class="{ active: currentSessionId === sessionId }"
+          @click="loadSession(sessionId)"
         >
-          Chat Session {{ index + 1 }}
+          Chat Session {{ sessionId }}
         </li>
       </ul>
       <button @click="createNewSession">New Session</button>
@@ -36,7 +36,6 @@
   </div>
 </template>
 
-
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
@@ -52,13 +51,13 @@ export default defineComponent({
   data() {
     return {
       input: '',
-      chatSessions: [[] as ChatEntry[]],
-      currentSessionIndex: 0,
+      chatSessions: {} as Record<string, ChatEntry[]>, // Using a record to map session IDs to chat entries
+      currentSessionId: '',
     };
   },
   computed: {
     chatHistory() {
-      return this.chatSessions[this.currentSessionIndex];
+      return this.chatSessions[this.currentSessionId] || [];
     }
   },
   mounted() {
@@ -69,10 +68,9 @@ export default defineComponent({
       if (this.input.trim() === '') return;
 
       try {
-        const res: string = await invoke('chat_gpt', { message: this.input });
-        const markdownHtml: string = await this.renderMarkdown(res); // Use await to resolve the promise
-        this.chatSessions[this.currentSessionIndex].push({ question: this.input, answer: res, markdownHtml });
-        await this.saveChatEntry(this.input, res);
+        const res: string = await invoke('chat_gpt', { sessionId: this.currentSessionId, message: this.input });
+        const markdownHtml: string = await this.renderMarkdown(res);
+        this.chatSessions[this.currentSessionId].push({ question: this.input, answer: res, markdownHtml });
         this.input = ''; // Clear the input after saving
       } catch (error) {
         console.error('Error calling API:', error);
@@ -80,19 +78,24 @@ export default defineComponent({
     },
     async loadChatHistory() {
       try {
-        const history: Array<{ question: string, answer: string }> = await invoke('get_chat_history');
-        console.log(history)
+        const history: Array<{ session_id: string, question: string, answer: string }> = await invoke('get_chat_history');
         history.forEach(async (entry) => {
           if (entry.answer == null) {
             return
           }
-          const markdownHtml = await this.renderMarkdown(entry.answer); // Use await to resolve the promise
-          this.chatSessions[this.currentSessionIndex].push({
+          const markdownHtml = await this.renderMarkdown(entry.answer);
+          if (!this.chatSessions[entry.session_id]) {
+            this.chatSessions[entry.session_id] = [];
+          }
+          this.chatSessions[entry.session_id].push({
             question: entry.question,
             answer: entry.answer,
             markdownHtml
           });
         });
+
+        // Set the first session ID as the active session
+        this.currentSessionId = Object.keys(this.chatSessions)[0] || '';
       } catch (error) {
         console.error('Failed to load chat history:', error);
       }
@@ -105,21 +108,17 @@ export default defineComponent({
     async renderMarkdown(markdownText: string): Promise<string> {
       return Promise.resolve(marked(markdownText));
     },
-    loadSession(index: number) {
-      this.currentSessionIndex = index;
+    loadSession(sessionId: string) {
+      this.currentSessionId = sessionId;
     },
-    createNewSession() {
-      this.chatSessions.push([]);
-      this.currentSessionIndex = this.chatSessions.length - 1;
+    async createNewSession() {
+      const newSessionId: string = await invoke('generate_session_id');
+      this.chatSessions[newSessionId] = [];
+      this.currentSessionId = newSessionId;
     },
-    async saveChatEntry(question: string, answer: string) {
-      // This function can be used to save the chat entry to the database or perform any additional processing
-    }
   },
 });
 </script>
-
-
 
 <style scoped>
 #app {
