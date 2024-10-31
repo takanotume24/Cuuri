@@ -72,6 +72,9 @@ export default defineComponent({
         const markdownHtml: string = await this.renderMarkdown(res);
         this.chatSessions[this.currentSessionId].push({ question: this.input, answer: res, markdownHtml });
         this.input = ''; // Clear the input after saving
+        this.$nextTick(() => {
+          this.scrollToBottom();
+        });
       } catch (error) {
         console.error('Error calling API:', error);
       }
@@ -81,7 +84,7 @@ export default defineComponent({
         const history: Array<{ session_id: string, question: string, answer: string }> = await invoke('get_chat_history');
         history.forEach(async (entry) => {
           if (entry.answer == null) {
-            return
+            return;
           }
           const markdownHtml = await this.renderMarkdown(entry.answer);
           if (!this.chatSessions[entry.session_id]) {
@@ -96,6 +99,9 @@ export default defineComponent({
 
         // Set the first session ID as the active session
         this.currentSessionId = Object.keys(this.chatSessions)[0] || '';
+        this.$nextTick(() => {
+          this.scrollToBottom();
+        });
       } catch (error) {
         console.error('Failed to load chat history:', error);
       }
@@ -110,12 +116,24 @@ export default defineComponent({
     },
     loadSession(sessionId: string) {
       this.currentSessionId = sessionId;
+      this.$nextTick(() => {
+        this.scrollToBottom();
+      });
     },
     async createNewSession() {
       const newSessionId: string = await invoke('generate_session_id');
       this.chatSessions[newSessionId] = [];
       this.currentSessionId = newSessionId;
+      this.$nextTick(() => {
+        this.scrollToBottom();
+      });
     },
+    scrollToBottom() {
+      const chatHistoryElement = this.$el.querySelector('#chat-history');
+      if (chatHistoryElement) {
+        chatHistoryElement.scrollTop = chatHistoryElement.scrollHeight;
+      }
+    }
   },
 });
 </script>
@@ -190,7 +208,7 @@ main {
   position: fixed;
   bottom: 0;
   left: 220px;
-  width: calc(100% - 240px); /* 左右に20pxずつの余白を確保 */
+  width: calc(100% - 240px); /* Adjust the width for padding */
   background-color: #fff;
   padding: 10px;
   box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
