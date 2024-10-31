@@ -1,14 +1,18 @@
 use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
 use diesel::sqlite::SqliteConnection;
+use dirs;
 use dotenvy::dotenv;
+use serde::Deserialize;
+use serde::Serialize;
 use serde_json::json;
 use std::collections::HashMap;
 use std::env;
+use std::fs;
+use std::io::Write; // Add this import for writing to the file
 use std::sync::Arc;
 use tauri::State;
 use uuid::Uuid;
-use chrono::NaiveDateTime;
 
 mod schema {
     diesel::table! {
@@ -24,8 +28,8 @@ mod schema {
 
 mod models {
     use super::schema::chat_history;
-    use diesel::prelude::*;
     use chrono::NaiveDateTime;
+    use diesel::prelude::*;
 
     #[derive(Queryable, Insertable)]
     #[diesel(table_name = chat_history)]
@@ -159,7 +163,6 @@ async fn chat_gpt(
     Ok(response.to_string())
 }
 
-
 #[tauri::command]
 async fn get_chat_history(db: State<'_, Database>) -> Result<Vec<HashMap<String, String>>, String> {
     let mut conn = db.pool.get().map_err(|e| e.to_string())?;
@@ -232,10 +235,83 @@ fn shutdown(database: &Database) {
         .expect("Failed to checkpoint database");
 }
 
+#[tauri::command]
+async fn set_openai_api_key(api_key: String) -> Result<(), String> {
+    let mut config_path = dirs::home_dir().expect("Failed to get home directory");
+    config_path.push(".chauri/config.toml");
+
+    let mut config = Config::from_file(config_path.to_str().unwrap())
+        .map_err(|e| format!("Failed to load configuration: {}", e))?;
+
+    config.openai_api_key = api_key;
+
+    let content =
+        toml::to_string(&config).map_err(|e| format!("Failed to serialize config: {}", e))?;
+
+    fs::write(&config_path, content)
+        .map_err(|e| format!("Failed to write to config file: {}", e))?;
+
+    Ok(())
+}
+#[derive(Deserialize, Serialize)]
+struct Config {
+    openai_api_key: String,
+    default_model: Option<String>,
+}
+
+impl Config {
+    fn from_file(path: &str) -> Result<Self, String> {
+        let content =
+            fs::read_to_string(path).map_err(|e| format!("Failed to read config file: {}", e))?;
+        toml::from_str(&content).map_err(|e| format!("Failed to parse config file: {}", e))
+    }
+}
+
+#[tauri::command]
+async fn get_openai_api_key() -> Result<String, String> {
+    let mut config_path = dirs::home_dir().expect("Failed to get home directory");
+    config_path.push(".chauri/config.toml");
+
+    if !config_path.exists() {
+        return Err("Configuration file does not exist".to_string());
+    }
+
+    let config = Config::from_file(config_path.to_str().unwrap())
+        .map_err(|e| format!("Failed to load configuration: {}", e))?;
+
+    Ok(config.openai_api_key)
+}
+
 pub fn run() {
-    dotenv().ok();
-    let api_key = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let mut config_path = dirs::home_dir().expect("Failed to get home directory");
+    config_path.push(".chauri/config.toml");
+
+    if !config_path.exists() {
+        if let Some(parent) = config_path.parent() {
+            fs::create_dir_all(parent).expect("Failed to create directories for config file");
+        }
+        let mut file = fs::File::create(&config_path).expect("Failed to create config file");
+
+        // Write default configuration values to the file
+        writeln!(file, "openai_api_key = \"\"").expect("Failed to write default API key");
+        writeln!(file, "default_model = \"gpt-3.5-turbo\"").expect("Failed to write default model");
+
+        println!("Configuration file created at {:?}", config_path);
+    }
+
+    let config =
+        Config::from_file(config_path.to_str().unwrap()).expect("Failed to load configuration");
+
+    let api_key = config.openai_api_key;
+
+    let mut db_path = dirs::home_dir().expect("Failed to get home directory");
+    db_path.push(".chauri/chat.db");
+
+    if let Some(parent) = db_path.parent() {
+        fs::create_dir_all(parent).expect("Failed to create directories for database file");
+    }
+
+    let database_url = format!("sqlite://{}", db_path.to_string_lossy());
 
     let database = Database::new(database_url);
     database.initialize();
@@ -249,6 +325,8 @@ pub fn run() {
             generate_session_id,
             get_available_models,
             get_default_model,
+            set_openai_api_key,
+            get_openai_api_key
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
