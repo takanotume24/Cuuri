@@ -96,11 +96,25 @@ async fn chat_gpt(
     state: State<'_, ApiKey>,
     db: State<'_, Database>,
 ) -> Result<String, String> {
-    let client = reqwest::Client::new();
+    let mut conn = db.pool.get().map_err(|e| e.to_string())?;
 
+    // Retrieve the entire chat history for the session
+    let session_history = chat_history
+        .filter(session_id.eq(input_session_id.clone()))
+        .load::<ChatHistory>(&mut conn)
+        .map_err(|e| e.to_string())?;
+
+    // Construct the message list for the API request
+    let mut messages = vec![json!({"role": "user", "content": message})];
+    for entry in session_history {
+        messages.insert(0, json!({"role": "assistant", "content": entry.answer}));
+        messages.insert(0, json!({"role": "user", "content": entry.question}));
+    }
+
+    let client = reqwest::Client::new();
     let request_body = json!({
-        "model": model, // Use the selected model
-        "messages": [{"role": "user", "content": message}],
+        "model": "gpt-3.5-turbo",
+        "messages": messages,
     });
 
     let res = client
@@ -116,7 +130,6 @@ async fn chat_gpt(
         .as_str()
         .ok_or_else(|| "No response from API".to_string())?;
 
-    let mut conn = db.pool.get().map_err(|e| e.to_string())?;
     let new_chat = NewChatHistory {
         session_id: input_session_id.as_str(),
         question: message.as_str(),
