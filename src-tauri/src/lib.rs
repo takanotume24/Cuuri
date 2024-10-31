@@ -137,6 +137,8 @@ async fn chat_gpt(
         .map_err(|e| e.to_string())?;
 
     let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
+    println!("{:?}", json);
+
     let response = json["choices"][0]["message"]["content"]
         .as_str()
         .ok_or_else(|| "No response from API".to_string())?;

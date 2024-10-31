@@ -64,6 +64,10 @@ export default defineComponent({
   mounted() {
     this.loadChatHistory();
     this.fetchAvailableModels();
+    // Create the initial session if no sessions are loaded
+    if (Object.keys(this.chatSessions).length === 0) {
+      this.createNewSession();
+    }
   },
   methods: {
     async fetchAvailableModels() {
@@ -146,12 +150,16 @@ export default defineComponent({
       });
     },
     async createNewSession() {
-      const newSessionId: string = await invoke('generate_session_id');
-      this.chatSessions[newSessionId] = [];
-      this.currentSessionId = newSessionId;
-      this.$nextTick(() => {
-        this.scrollToBottom();
-      });
+      try {
+        const newSessionId: string = await invoke('generate_session_id');
+        this.chatSessions[newSessionId] = [];
+        this.currentSessionId = newSessionId;
+        this.$nextTick(() => {
+          this.scrollToBottom();
+        });
+      } catch (error) {
+        console.error('Failed to create a new session:', error);
+      }
     },
     scrollToBottom() {
       const chatHistoryElement = this.$el.querySelector('#chat-history');
@@ -161,6 +169,7 @@ export default defineComponent({
     }
   },
 });
+
 </script>
 
 <style scoped>
