@@ -8,6 +8,14 @@
         </li>
       </ul>
       <button @click="createNewSession">New Session</button>
+      <div class="model-selector">
+        <label for="model-select">Select Model:</label>
+        <select id="model-select" v-model="selectedModel">
+          <option v-for="model in availableModels" :key="model" :value="model">
+            {{ model }}
+          </option>
+        </select>
+      </div>
     </aside>
     <main>
       <header>
@@ -42,8 +50,10 @@ export default defineComponent({
   data() {
     return {
       input: '',
-      chatSessions: {} as Record<string, ChatEntry[]>, // Using a record to map session IDs to chat entries
+      chatSessions: {} as Record<string, ChatEntry[]>,
       currentSessionId: '',
+      selectedModel: '',
+      availableModels: [] as string[], // List of available models
     };
   },
   computed: {
@@ -53,22 +63,38 @@ export default defineComponent({
   },
   mounted() {
     this.loadChatHistory();
+    this.fetchAvailableModels();
   },
   methods: {
+    async fetchAvailableModels() {
+      try {
+        const models: string[] = await invoke('get_available_models');
+        this.availableModels = models;
+        if (models.length > 0) {
+          const defaultModel: string = await invoke('get_default_model');
+          this.selectedModel = models.includes(defaultModel) ? defaultModel : '';
+        }
+      } catch (error) {
+        console.error('Failed to fetch available models:', error);
+      }
+    },
     async handleSubmit() {
       if (this.input.trim() === '') return;
 
       try {
-        const res: string = await invoke('chat_gpt', { inputSessionId: this.currentSessionId, message: this.input });
+        const res: string = await invoke('chat_gpt', {
+          inputSessionId: this.currentSessionId,
+          message: this.input,
+          model: this.selectedModel // Pass the selected model
+        });
         const markdownHtml: string = await this.renderMarkdown(res);
 
-        // Ensure the session array is initialized
         if (!this.chatSessions[this.currentSessionId]) {
           this.chatSessions[this.currentSessionId] = [];
         }
 
         this.chatSessions[this.currentSessionId].push({ question: this.input, answer: res, markdownHtml });
-        this.input = ''; // Clear the input after saving
+        this.input = '';
         this.$nextTick(() => {
           this.scrollToBottom();
         });
@@ -94,7 +120,6 @@ export default defineComponent({
           });
         });
 
-        // Set the first session ID as the active session
         if (!this.currentSessionId && Object.keys(this.chatSessions).length > 0) {
           this.currentSessionId = Object.keys(this.chatSessions)[0];
         }
@@ -121,7 +146,7 @@ export default defineComponent({
     },
     async createNewSession() {
       const newSessionId: string = await invoke('generate_session_id');
-      this.chatSessions[newSessionId] = []; // Initialize the new session
+      this.chatSessions[newSessionId] = [];
       this.currentSessionId = newSessionId;
       this.$nextTick(() => {
         this.scrollToBottom();
@@ -140,86 +165,111 @@ export default defineComponent({
 <style scoped>
 #app {
   display: flex;
+  width: 100%;
+  height: 100vh;
+  font-family: Arial, sans-serif;
 }
 
 aside#chat-sessions {
-  width: 200px;
-  background-color: #e0e0e0;
-  border-right: 1px solid #ddd;
+  width: 25%;
+  background-color: #f0f0f0;
   padding: 10px;
   box-sizing: border-box;
-  position: relative;
-  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-aside#chat-sessions ul {
-  list-style-type: none;
-  padding: 60px 0 0;
+#chat-sessions ul {
+  list-style: none;
+  padding: 0;
   margin: 0;
+  flex-grow: 1;
+  overflow-y: auto;
 }
 
-aside#chat-sessions li {
+#chat-sessions li {
   padding: 10px;
   cursor: pointer;
+  border-bottom: 1px solid #ccc;
 }
 
-aside#chat-sessions li.active {
+#chat-sessions li.active {
   background-color: #dcdcdc;
   font-weight: bold;
 }
 
-aside#chat-sessions button {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  padding: 10px 20px;
-  font-size: 16px;
+#chat-sessions button {
+  margin-top: 10px;
+  padding: 10px;
+  border: none;
+  background-color: #e0e0e0;
   cursor: pointer;
+}
+
+#chat-sessions button:hover {
+  background-color: #d0d0d0;
+}
+
+.model-selector {
+  margin-top: auto;
 }
 
 main {
-  flex: 1;
-  padding: 20px;
+  width: 75%;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+header {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
 }
 
 #chat-history {
-  margin-bottom: 20px;
-  text-align: left;
+  flex-grow: 1;
   overflow-y: auto;
-  max-height: calc(100vh - 180px);
+  border-bottom: 1px solid #ccc;
+  margin-bottom: 10px;
+  padding-right: 10px;
 }
 
 .chat-entry {
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
 .user-message {
-  margin: 5px 0;
-}
-
-.gpt-response {
-  margin: 5px 0;
-  border-left: 2px solid #ddd;
-  padding-left: 10px;
+  margin-bottom: 5px;
+  font-weight: bold;
 }
 
 .input-form {
-  position: fixed;
-  bottom: 0;
-  left: 220px;
-  width: calc(100% - 240px);
-  /* Adjust the width for padding */
-  background-color: #fff;
-  padding: 10px;
-  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
   display: flex;
-  justify-content: center;
+  align-items: center;
 }
 
-button {
-  margin-left: 10px;
+textarea {
+  flex-grow: 1;
+  margin-right: 10px;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: none;
+}
+
+button[type="submit"] {
   padding: 10px 20px;
-  font-size: 16px;
+  border: none;
+  background-color: #007bff;
+  color: white;
   cursor: pointer;
+  border-radius: 4px;
+}
+
+button[type="submit"]:hover {
+  background-color: #0056b3;
 }
 </style>
