@@ -2,12 +2,8 @@
   <div id="app">
     <aside id="chat-sessions">
       <ul>
-        <li
-          v-for="(session, sessionId) in chatSessions"
-          :key="sessionId"
-          :class="{ active: currentSessionId === sessionId }"
-          @click="loadSession(sessionId)"
-        >
+        <li v-for="(session, sessionId) in chatSessions" :key="sessionId"
+          :class="{ active: currentSessionId === sessionId }" @click="loadSession(sessionId)">
           Chat Session {{ sessionId }}
         </li>
       </ul>
@@ -22,13 +18,8 @@
           </div>
         </div>
         <form @submit.prevent="handleSubmit" class="input-form">
-          <textarea
-            v-model="input"
-            placeholder="Ask ChatGPT..."
-            rows="4"
-            cols="50"
-            @keydown="checkCtrlEnter"
-          ></textarea>
+          <textarea v-model="input" placeholder="Ask ChatGPT..." rows="4" cols="50"
+            @keydown="checkCtrlEnter"></textarea>
           <button type="submit">Send</button>
         </form>
       </header>
@@ -70,6 +61,12 @@ export default defineComponent({
       try {
         const res: string = await invoke('chat_gpt', { inputSessionId: this.currentSessionId, message: this.input });
         const markdownHtml: string = await this.renderMarkdown(res);
+
+        // Ensure the session array is initialized
+        if (!this.chatSessions[this.currentSessionId]) {
+          this.chatSessions[this.currentSessionId] = [];
+        }
+
         this.chatSessions[this.currentSessionId].push({ question: this.input, answer: res, markdownHtml });
         this.input = ''; // Clear the input after saving
         this.$nextTick(() => {
@@ -98,7 +95,9 @@ export default defineComponent({
         });
 
         // Set the first session ID as the active session
-        this.currentSessionId = Object.keys(this.chatSessions)[0] || '';
+        if (!this.currentSessionId && Object.keys(this.chatSessions).length > 0) {
+          this.currentSessionId = Object.keys(this.chatSessions)[0];
+        }
         this.$nextTick(() => {
           this.scrollToBottom();
         });
@@ -122,7 +121,7 @@ export default defineComponent({
     },
     async createNewSession() {
       const newSessionId: string = await invoke('generate_session_id');
-      this.chatSessions[newSessionId] = [];
+      this.chatSessions[newSessionId] = []; // Initialize the new session
       this.currentSessionId = newSessionId;
       this.$nextTick(() => {
         this.scrollToBottom();
@@ -208,7 +207,8 @@ main {
   position: fixed;
   bottom: 0;
   left: 220px;
-  width: calc(100% - 240px); /* Adjust the width for padding */
+  width: calc(100% - 240px);
+  /* Adjust the width for padding */
   background-color: #fff;
   padding: 10px;
   box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
