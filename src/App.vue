@@ -59,15 +59,22 @@ export default defineComponent({
       if (this.input.trim() === '') return;
 
       try {
-        const res: string = await invoke('chat_gpt', { inputSessionId: this.currentSessionId, message: this.input });
-        const markdownHtml: string = await this.renderMarkdown(res);
+        const res = await invoke<string>('chat_gpt', {
+          inputSessionId: this.currentSessionId,
+          message: this.input,
+        });
+        const markdownHtml = await this.renderMarkdown(res);
 
         // Ensure the session array is initialized
         if (!this.chatSessions[this.currentSessionId]) {
           this.chatSessions[this.currentSessionId] = [];
         }
 
-        this.chatSessions[this.currentSessionId].push({ question: this.input, answer: res, markdownHtml });
+        this.chatSessions[this.currentSessionId].push({
+          question: this.input,
+          answer: res,
+          markdownHtml,
+        });
         this.input = ''; // Clear the input after saving
         this.$nextTick(() => {
           this.scrollToBottom();
