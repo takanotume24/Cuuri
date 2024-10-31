@@ -1,9 +1,11 @@
 use diesel::prelude::*;
+use diesel::r2d2::{self, ConnectionManager};
 use diesel::sqlite::SqliteConnection;
 use dotenvy::dotenv;
 use serde_json::json;
 use std::collections::HashMap;
 use std::env;
+use std::sync::Arc;
 use tauri::State;
 use uuid::Uuid;
 
@@ -43,17 +45,28 @@ mod models {
 use models::{ChatHistory, NewChatHistory};
 use schema::chat_history::dsl::*;
 
+type Pool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
+
 struct ApiKey(String);
 
-struct Database(String);
+#[derive(Clone)]  // Implement the Clone trait for Database
+struct Database {
+    pool: Arc<Pool>,
+}
 
 impl Database {
-    fn get_connection(&self) -> SqliteConnection {
-        SqliteConnection::establish(&self.0).expect("Failed to connect to database")
+    fn new(database_url: String) -> Self {
+        let manager = ConnectionManager::<SqliteConnection>::new(database_url);
+        let pool = r2d2::Pool::builder()
+            .build(manager)
+            .expect("Failed to create pool.");
+        Database {
+            pool: Arc::new(pool),
+        }
     }
 
     fn initialize(&self) {
-        let mut conn = self.get_connection();
+        let mut conn = self.pool.get().expect("Failed to get connection");
         diesel::sql_query(
             "CREATE TABLE IF NOT EXISTS chat_history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,11 +76,19 @@ impl Database {
             )"
         ).execute(&mut conn).expect("Failed to create table");
     }
+
+    fn checkpoint(&self) -> Result<(), String> {
+        let mut conn = self.pool.get().map_err(|e| e.to_string())?;
+        diesel::sql_query("PRAGMA wal_checkpoint(TRUNCATE)")
+            .execute(&mut conn)
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    }
 }
 
 #[tauri::command]
 async fn chat_gpt(
-    input_session_id: String, // ここで変数名を変更
+    input_session_id: String,
     message: String,
     state: State<'_, ApiKey>,
     db: State<'_, Database>,
@@ -92,9 +113,9 @@ async fn chat_gpt(
         .as_str()
         .ok_or_else(|| "No response from API".to_string())?;
 
-    let mut conn = db.get_connection();
+    let mut conn = db.pool.get().map_err(|e| e.to_string())?;
     let new_chat = NewChatHistory {
-        session_id: input_session_id.as_str(), // 修正: 正しい変数名を使用
+        session_id: input_session_id.as_str(),
         question: message.as_str(),
         answer: response,
     };
@@ -111,7 +132,7 @@ async fn chat_gpt(
 async fn get_chat_history(
     db: State<'_, Database>,
 ) -> Result<Vec<HashMap<String, String>>, String> {
-    let mut conn = db.get_connection();
+    let mut conn = db.pool.get().map_err(|e| e.to_string())?;
 
     let results = chat_history
         .load::<ChatHistory>(&mut conn)
@@ -136,17 +157,21 @@ fn generate_session_id() -> String {
     Uuid::new_v4().to_string()
 }
 
+fn shutdown(database: &Database) {
+    database.checkpoint().expect("Failed to checkpoint database");
+}
+
 pub fn run() {
     dotenv().ok();
     let api_key = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
-    let database = Database(database_url.clone());
-    database.initialize(); // テーブルの自動作成
+    let database = Database::new(database_url);
+    database.initialize();
 
     tauri::Builder::default()
         .manage(ApiKey(api_key))
-        .manage(database)
+        .manage(database.clone()) // Clone to use in shutdown
         .invoke_handler(tauri::generate_handler![
             chat_gpt,
             get_chat_history,
@@ -154,4 +179,6 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+
+    shutdown(&database);
 }

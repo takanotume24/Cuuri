@@ -26,4 +26,5 @@ reqwest = { version = "0.12.9", features = ["json"] }
 dotenvy = "0.15.7"
 tokio = "1.41.0"
 uuid = { version = "1.11.0", features = ["v4"] }
-diesel = { version = "2.2.4", features = ["sqlite"] }
+diesel = { version = "2.2.4", features = ["sqlite", "r2d2"] }
+r2d2 = "0.8.10"
