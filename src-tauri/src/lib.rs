@@ -49,7 +49,7 @@ type Pool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
 
 struct ApiKey(String);
 
-#[derive(Clone)]  // Implement the Clone trait for Database
+#[derive(Clone)] // Implement the Clone trait for Database
 struct Database {
     pool: Arc<Pool>,
 }
@@ -73,8 +73,10 @@ impl Database {
                 session_id TEXT NOT NULL,
                 question TEXT NOT NULL,
                 answer TEXT NOT NULL
-            )"
-        ).execute(&mut conn).expect("Failed to create table");
+            )",
+        )
+        .execute(&mut conn)
+        .expect("Failed to create table");
     }
 
     fn checkpoint(&self) -> Result<(), String> {
@@ -90,6 +92,7 @@ impl Database {
 async fn chat_gpt(
     input_session_id: String,
     message: String,
+    model: String, // Accept model as an argument
     state: State<'_, ApiKey>,
     db: State<'_, Database>,
 ) -> Result<String, String> {
@@ -110,8 +113,8 @@ async fn chat_gpt(
 
     let client = reqwest::Client::new();
     let request_body = json!({
-        "model": "gpt-3.5-turbo",
-        "messages": messages,
+        "model": model, // Use the selected model
+        "messages": [{"role": "user", "content": message}],
     });
 
     let res = client
@@ -142,9 +145,7 @@ async fn chat_gpt(
 }
 
 #[tauri::command]
-async fn get_chat_history(
-    db: State<'_, Database>,
-) -> Result<Vec<HashMap<String, String>>, String> {
+async fn get_chat_history(db: State<'_, Database>) -> Result<Vec<HashMap<String, String>>, String> {
     let mut conn = db.pool.get().map_err(|e| e.to_string())?;
 
     let results = chat_history
@@ -170,8 +171,52 @@ fn generate_session_id() -> String {
     Uuid::new_v4().to_string()
 }
 
+#[tauri::command]
+async fn get_available_models(state: State<'_, ApiKey>) -> Result<Vec<String>, String> {
+    let client = reqwest::Client::new();
+
+    let res = client
+        .get("https://api.openai.com/v1/models")
+        .header("Authorization", format!("Bearer {}", state.0))
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if !res.status().is_success() {
+        return Err(format!("Failed to fetch models: HTTP {}", res.status()));
+    }
+
+    let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
+    let mut models: Vec<String> = json["data"]
+        .as_array()
+        .ok_or("Invalid response format")?
+        .iter()
+        .filter_map(|model| model["id"].as_str().map(|s| s.to_string()))
+        .collect();
+
+    // Sort the models alphabetically
+    models.sort();
+
+    Ok(models)
+}
+
+
+#[tauri::command]
+fn get_default_model() -> Result<String, String> {
+    // dotenvファイルをロードします。
+    dotenv().ok();
+
+    // 環境変数 "DEFAULT_MODEL" を取得します。
+    match env::var("DEFAULT_MODEL") {
+        Ok(default_model) => Ok(default_model),
+        Err(e) => Err(format!("Failed to get DEFAULT_MODEL: {}", e)),
+    }
+}
+
 fn shutdown(database: &Database) {
-    database.checkpoint().expect("Failed to checkpoint database");
+    database
+        .checkpoint()
+        .expect("Failed to checkpoint database");
 }
 
 pub fn run() {
@@ -184,11 +229,13 @@ pub fn run() {
 
     tauri::Builder::default()
         .manage(ApiKey(api_key))
-        .manage(database.clone()) // Clone to use in shutdown
+        .manage(database.clone())
         .invoke_handler(tauri::generate_handler![
             chat_gpt,
             get_chat_history,
-            generate_session_id
+            generate_session_id,
+            get_available_models,
+            get_default_model,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
