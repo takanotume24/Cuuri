@@ -95,6 +95,7 @@ export default defineComponent({
 
         this.chatSessions[this.currentSessionId].push({ question: this.input, answer: res, markdownHtml });
         this.input = '';
+
         this.$nextTick(() => {
           this.scrollToBottom();
         });
