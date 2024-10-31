@@ -68,7 +68,7 @@ export default defineComponent({
       if (this.input.trim() === '') return;
 
       try {
-        const res: string = await invoke('chat_gpt', { sessionId: this.currentSessionId, message: this.input });
+        const res: string = await invoke('chat_gpt', { inputSessionId: this.currentSessionId, message: this.input });
         const markdownHtml: string = await this.renderMarkdown(res);
         this.chatSessions[this.currentSessionId].push({ question: this.input, answer: res, markdownHtml });
         this.input = ''; // Clear the input after saving

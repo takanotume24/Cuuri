@@ -1,30 +1,78 @@
+use diesel::prelude::*;
+use diesel::sqlite::SqliteConnection;
 use dotenvy::dotenv;
-use reqwest::Client;
 use serde_json::json;
-use sqlx::{sqlite::Sqlite, Row, SqliteConnection, Connection, migrate::MigrateDatabase};
 use std::collections::HashMap;
 use std::env;
-use tauri::{async_runtime::block_on, State, WindowEvent};
+use tauri::State;
 use uuid::Uuid;
+
+mod schema {
+    diesel::table! {
+        chat_history (id) {
+            id -> Integer,
+            session_id -> Text,
+            question -> Text,
+            answer -> Text,
+        }
+    }
+}
+
+mod models {
+    use super::schema::chat_history;
+    use diesel::prelude::*;
+
+    #[derive(Queryable, Insertable)]
+    #[diesel(table_name = chat_history)]
+    pub struct ChatHistory {
+        pub id: i32,
+        pub session_id: String,
+        pub question: String,
+        pub answer: String,
+    }
+
+    #[derive(Insertable)]
+    #[diesel(table_name = chat_history)]
+    pub struct NewChatHistory<'a> {
+        pub session_id: &'a str,
+        pub question: &'a str,
+        pub answer: &'a str,
+    }
+}
+
+use models::{ChatHistory, NewChatHistory};
+use schema::chat_history::dsl::*;
 
 struct ApiKey(String);
 
 struct Database(String);
 
 impl Database {
-    async fn get_connection(&self) -> Result<SqliteConnection, sqlx::Error> {
-        SqliteConnection::connect(&self.0).await
+    fn get_connection(&self) -> SqliteConnection {
+        SqliteConnection::establish(&self.0).expect("Failed to connect to database")
+    }
+
+    fn initialize(&self) {
+        let mut conn = self.get_connection();
+        diesel::sql_query(
+            "CREATE TABLE IF NOT EXISTS chat_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id TEXT NOT NULL,
+                question TEXT NOT NULL,
+                answer TEXT NOT NULL
+            )"
+        ).execute(&mut conn).expect("Failed to create table");
     }
 }
 
 #[tauri::command]
 async fn chat_gpt(
-    session_id: String,
+    input_session_id: String, // ここで変数名を変更
     message: String,
     state: State<'_, ApiKey>,
     db: State<'_, Database>,
 ) -> Result<String, String> {
-    let client = Client::new();
+    let client = reqwest::Client::new();
 
     let request_body = json!({
         "model": "gpt-3.5-turbo",
@@ -42,15 +90,18 @@ async fn chat_gpt(
     let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
     let response = json["choices"][0]["message"]["content"]
         .as_str()
-        .ok_or("No response from API".to_string())?;
+        .ok_or_else(|| "No response from API".to_string())?;
 
-    let mut conn = db.get_connection().await.map_err(|e| e.to_string())?;
-    sqlx::query("INSERT INTO chat_history (session_id, question, answer) VALUES (?, ?, ?)")
-        .bind(&session_id)
-        .bind(&message)
-        .bind(&response)
+    let mut conn = db.get_connection();
+    let new_chat = NewChatHistory {
+        session_id: input_session_id.as_str(), // 修正: 正しい変数名を使用
+        question: message.as_str(),
+        answer: response,
+    };
+
+    diesel::insert_into(chat_history)
+        .values(&new_chat)
         .execute(&mut conn)
-        .await
         .map_err(|e| e.to_string())?;
 
     Ok(response.to_string())
@@ -60,28 +111,29 @@ async fn chat_gpt(
 async fn get_chat_history(
     db: State<'_, Database>,
 ) -> Result<Vec<HashMap<String, String>>, String> {
-    let mut conn = db.get_connection().await.map_err(|e| e.to_string())?;
-    let rows = sqlx::query("SELECT session_id, question, answer FROM chat_history")
-        .map(|row: sqlx::sqlite::SqliteRow| {
-            let session_id: String = row.get("session_id");
-            let question: String = row.get("question");
-            let answer: String = row.get("answer");
+    let mut conn = db.get_connection();
+
+    let results = chat_history
+        .load::<ChatHistory>(&mut conn)
+        .map_err(|e| e.to_string())?;
+
+    let rows: Vec<HashMap<String, String>> = results
+        .into_iter()
+        .map(|chat| {
             let mut map = HashMap::new();
-            map.insert("session_id".to_string(), session_id);
-            map.insert("question".to_string(), question);
-            map.insert("answer".to_string(), answer);
+            map.insert("session_id".to_string(), chat.session_id);
+            map.insert("question".to_string(), chat.question);
+            map.insert("answer".to_string(), chat.answer);
             map
         })
-        .fetch_all(&mut conn)
-        .await
-        .map_err(|e| e.to_string())?;
+        .collect();
 
     Ok(rows)
 }
 
 #[tauri::command]
 fn generate_session_id() -> String {
-    Uuid::new_v4().to_string() // Using UUIDv4 for simplicity
+    Uuid::new_v4().to_string()
 }
 
 pub fn run() {
@@ -89,37 +141,12 @@ pub fn run() {
     let api_key = env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY must be set");
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
-    block_on(async {
-        if !Sqlite::database_exists(&database_url).await.unwrap_or(false) {
-            println!("Creating database at {}", database_url);
-            Sqlite::create_database(&database_url).await.expect("Failed to create database");
-        } else {
-            println!("Database already exists at {}", database_url);
-        }
-
-        let mut conn = SqliteConnection::connect(&database_url)
-            .await
-            .expect("Failed to connect to database for setup");
-
-        sqlx::query(
-            "CREATE TABLE IF NOT EXISTS chat_history (
-                id INTEGER PRIMARY KEY, 
-                session_id TEXT, 
-                question TEXT, 
-                answer TEXT
-            )",
-        )
-        .execute(&mut conn)
-        .await
-        .expect("Failed to create table");
-
-        // Explicitly close the connection
-        drop(conn);
-    });
+    let database = Database(database_url.clone());
+    database.initialize(); // テーブルの自動作成
 
     tauri::Builder::default()
         .manage(ApiKey(api_key))
-        .manage(Database(database_url))
+        .manage(database)
         .invoke_handler(tauri::generate_handler![
             chat_gpt,
             get_chat_history,
