@@ -2,8 +2,8 @@
   <div id="app">
     <aside id="chat-sessions">
       <ul>
-        <li v-for="(session, sessionId) in chatSessions" :key="sessionId"
-          :class="{ active: currentSessionId === sessionId }" @click="loadSession(sessionId)">
+        <li v-for="(_, sessionId) in chatSessions" :key="sessionId" :class="{ active: currentSessionId === sessionId }"
+          @click="loadSession(sessionId)">
           Chat Session {{ sessionId }}
         </li>
       </ul>
@@ -25,11 +25,20 @@
             <div class="gpt-response" v-html="entry.markdownHtml"></div>
           </div>
         </div>
-        <form @submit.prevent="handleSubmit" class="input-form">
-          <textarea v-model="input" placeholder="Ask ChatGPT..." rows="4" cols="50"
-            @keydown="checkCtrlEnter"></textarea>
-          <button type="submit">Send</button>
-        </form>
+        <div v-if="!apiKeySet" class="modal-overlay">
+          <div class="modal-dialog">
+            <h2>Enter your OpenAI API Key</h2>
+            <input v-model="apiKeyInput" placeholder="Enter your OpenAI API key" />
+            <button @click="saveApiKey">Save API Key</button>
+          </div>
+        </div>
+        <div v-else>
+          <form @submit.prevent="handleSubmit" class="input-form">
+            <textarea v-model="input" placeholder="Ask ChatGPT..." rows="4" cols="50"
+              @keydown="checkCtrlEnter"></textarea>
+            <button type="submit">Send</button>
+          </form>
+        </div>
       </header>
     </main>
   </div>
@@ -53,7 +62,9 @@ export default defineComponent({
       chatSessions: {} as Record<string, ChatEntry[]>,
       currentSessionId: '',
       selectedModel: '',
-      availableModels: [] as string[], // List of available models
+      availableModels: [] as string[],
+      apiKeyInput: '',
+      apiKeySet: false,
     };
   },
   computed: {
@@ -61,16 +72,35 @@ export default defineComponent({
       return this.chatSessions[this.currentSessionId] || [];
     }
   },
-  mounted() {
-    this.loadChatHistory();
-    this.fetchAvailableModels();
-    // Create the initial session if no sessions are loaded
-    if (Object.keys(this.chatSessions).length === 0) {
-      this.createNewSession();
+  async mounted() {
+    try {
+      const key = await invoke<string>('get_openai_api_key');
+      if (!key) {
+        this.apiKeySet = false;
+      } else {
+        this.apiKeySet = true;
+        await this.loadChatHistory();
+        await this.fetchAvailableModels();
+        if (Object.keys(this.chatSessions).length === 0) {
+          await this.createNewSession();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check API key:', error);
+    }
+  },
+  watch: {
+    async apiKeySet(newValue, oldValue) {
+      const key = await invoke<string>('get_openai_api_key');
+      if (!this.selectedModel && key && newValue) {
+        console.log('apiKeySet changed');
+        await this.fetchAvailableModels();
+      }
     }
   },
   methods: {
     async fetchAvailableModels() {
+      console.log('fetchAvailableModels called')
       try {
         const models: string[] = await invoke('get_available_models');
         this.availableModels = models;
@@ -89,7 +119,7 @@ export default defineComponent({
         const res: string = await invoke('chat_gpt', {
           inputSessionId: this.currentSessionId,
           message: this.input,
-          model: this.selectedModel // Pass the selected model
+          model: this.selectedModel
         });
         const markdownHtml: string = await this.renderMarkdown(res);
 
@@ -110,9 +140,9 @@ export default defineComponent({
     async loadChatHistory() {
       try {
         const history: Array<{ session_id: string, question: string, answer: string }> = await invoke('get_chat_history');
-        history.forEach(async (entry) => {
+        for (const entry of history) {
           if (entry.answer == null) {
-            return;
+            continue;
           }
           const markdownHtml = await this.renderMarkdown(entry.answer);
           if (!this.chatSessions[entry.session_id]) {
@@ -123,7 +153,7 @@ export default defineComponent({
             answer: entry.answer,
             markdownHtml
           });
-        });
+        }
 
         if (!this.currentSessionId && Object.keys(this.chatSessions).length > 0) {
           this.currentSessionId = Object.keys(this.chatSessions)[0];
@@ -166,10 +196,22 @@ export default defineComponent({
       if (chatHistoryElement) {
         chatHistoryElement.scrollTop = chatHistoryElement.scrollHeight;
       }
-    }
+    },
+    async saveApiKey() {
+      try {
+        await invoke('set_openai_api_key', { apiKey: this.apiKeyInput });
+        this.apiKeySet = true;
+        await this.loadChatHistory();
+        await this.fetchAvailableModels();
+        if (Object.keys(this.chatSessions).length === 0) {
+          await this.createNewSession();
+        }
+      } catch (error) {
+        console.error('Failed to save API key:', error);
+      }
+    },
   },
 });
-
 </script>
 
 <style scoped>
@@ -178,6 +220,47 @@ export default defineComponent({
   width: 100%;
   height: 100vh;
   font-family: Arial, sans-serif;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-dialog {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+
+.modal-dialog input {
+  width: 80%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.modal-dialog button {
+  padding: 10px 20px;
+  border: none;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.modal-dialog button:hover {
+  background-color: #0056b3;
 }
 
 aside#chat-sessions {

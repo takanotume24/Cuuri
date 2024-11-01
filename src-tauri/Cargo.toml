@@ -29,3 +29,5 @@ uuid = { version = "1.11.0", features = ["v4"] }
 diesel = { version = "2.2.4", features = ["sqlite", "r2d2", "chrono"] }
 r2d2 = "0.8.10"
 chrono = { version = "0.4.38", features = ["serde"] }
+dirs = "5.0.1"
+toml = "0.8.19"
