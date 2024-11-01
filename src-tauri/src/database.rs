@@ -1,6 +1,6 @@
+use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
 use diesel::sqlite::SqliteConnection;
-use diesel::prelude::*;
 use std::sync::Arc;
 
 pub struct ApiKey(pub String);

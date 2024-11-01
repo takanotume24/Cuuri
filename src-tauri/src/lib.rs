@@ -6,12 +6,26 @@ use std::io::Write;
 mod commands;
 mod config;
 mod database;
+mod generate_session_id;
+mod get_available_models;
+mod get_chat_history;
+mod get_db_connection;
+mod get_default_model;
+mod get_openai_api_key;
 mod models;
 mod schema;
+mod set_openai_api_key;
+mod get_config;
 
 use commands::*;
 use config::Config;
 use database::{ApiKey, Database};
+use generate_session_id::generate_session_id;
+use get_available_models::get_available_models;
+use get_chat_history::get_chat_history;
+use get_default_model::get_default_model;
+use get_openai_api_key::get_openai_api_key;
+use set_openai_api_key::set_openai_api_key;
 
 fn shutdown(database: &Database) {
     database
