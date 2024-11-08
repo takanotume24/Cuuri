@@ -22,6 +22,7 @@ jobs:
             args: ''
 
     steps:
+      - uses: actions/checkout@v4
       - name: Call Common Build Steps
         uses: ./.github/workflows/build-common.yml
         with:
