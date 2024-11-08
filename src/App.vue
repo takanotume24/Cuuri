@@ -73,97 +73,174 @@ export default defineComponent({
     }
   },
   async mounted() {
-    try {
-      const key = await invoke<string>('get_openai_api_key');
-      if (!key) {
-        this.apiKeySet = false;
-      } else {
-        this.apiKeySet = true;
-        await this.loadChatHistory();
-        await this.fetchAvailableModels();
-        if (Object.keys(this.chatSessions).length === 0) {
-          await this.createNewSession();
-        }
+    const key = await this.getApiKey();
+
+    if (!key) {
+      this.apiKeySet = false;
+      return;
+    } else {
+      this.apiKeySet = true;
+      await this.loadChatHistory();
+      await this.fetchAvailableModels();
+      if (Object.keys(this.chatSessions).length === 0) {
+        await this.createNewSession();
       }
-    } catch (error) {
-      console.error('Failed to check API key:', error);
     }
   },
   watch: {
-    async apiKeySet(newValue, _) {
-      const key = await invoke<string>('get_openai_api_key');
-      if (!this.selectedModel && key && newValue) {
-        console.log('apiKeySet changed');
-        await this.fetchAvailableModels();
-      }
-    }
   },
   methods: {
-    async fetchAvailableModels() {
-      console.log('fetchAvailableModels called')
+    async getApiKey(): Promise<string | null> {
       try {
-        const models: string[] = await invoke('get_available_models');
-        this.availableModels = models;
-        if (models.length > 0) {
-          const defaultModel: string = await invoke('get_default_model');
-          this.selectedModel = models.includes(defaultModel) ? defaultModel : '';
-        }
+        return await invoke<string>('get_openai_api_key');
       } catch (error) {
-        console.error('Failed to fetch available models:', error);
+        console.error('Failed to check API key:', error);
+        return null;
       }
     },
+    async getAvailableModels(
+      apiKey: string,
+    ): Promise<string[] | null> {
+      try {
+        return await invoke<string[]>('get_available_models', {
+          apiKey: apiKey,
+        });
+      } catch (error) {
+        console.error('Failed to get Available models:', error);
+        return null;
+      }
+    },
+    async getDefaultModel(): Promise<string | null> {
+      try {
+        return await invoke<string>('get_default_model');
+      } catch (error) {
+        console.error('Failed to get default model:', error);
+        return null;
+      }
+    },
+    async generateSessionId(): Promise<string | null> {
+      try {
+        return await invoke<string>('generate_session_id');
+      } catch (error) {
+        console.error('Failed to generate session id:', error);
+        return null;
+      }
+    },
+    async getChatGptResponse(
+      currentSessionId: string,
+      input: string,
+      selectedModel: string,
+      apiKey: string,
+    ): Promise<string | null> {
+      try {
+        return await invoke('chat_gpt', {
+          inputSessionId: currentSessionId,
+          message: input,
+          model: selectedModel,
+          apiKey: apiKey,
+        });;
+      } catch (error) {
+        console.error('Failed to get the response from chatgpt api:', error);
+        return null;
+      }
+    },
+    async getChatHistory(): Promise<Array<{ session_id: string, question: string, answer: string }> | null> {
+      try {
+        return await invoke('get_chat_history');
+      } catch (error) {
+        console.error('Failed to get chat history:', error);
+        return null;
+      }
+    },
+    async fetchAvailableModels() {
+      const apiKey = await this.getApiKey();
+
+      if (!apiKey) {
+        return;
+      };
+
+      const models = await this.getAvailableModels(apiKey);
+
+      if (!models) {
+        return;
+      }
+
+      this.availableModels = models;
+      if (models.length > 0) {
+        const defaultModel = await this.getDefaultModel();
+
+        if (!defaultModel) {
+          this.selectedModel = '';
+          return;
+        }
+
+        this.selectedModel = models.includes(defaultModel) ? defaultModel : '';
+      }
+
+    },
+
     async handleSubmit() {
       if (this.input.trim() === '') return;
 
-      try {
-        const res: string = await invoke('chat_gpt', {
-          inputSessionId: this.currentSessionId,
-          message: this.input,
-          model: this.selectedModel
-        });
-        const markdownHtml: string = await this.renderMarkdown(res);
+      const api_key = await this.getApiKey();
 
-        if (!this.chatSessions[this.currentSessionId]) {
-          this.chatSessions[this.currentSessionId] = [];
-        }
-
-        this.chatSessions[this.currentSessionId].push({ question: this.input, answer: res, markdownHtml });
-        this.input = '';
-
-        this.$nextTick(() => {
-          this.scrollToBottom();
-        });
-      } catch (error) {
-        console.error('Error calling API:', error);
+      if (!api_key) {
+        return;
       }
+
+      const res = await this.getChatGptResponse(
+        this.currentSessionId,
+        this.input,
+        this.selectedModel,
+        api_key,
+      )
+
+      if (!res) {
+        return
+      }
+
+      const markdownHtml: string = await this.renderMarkdown(res);
+
+      if (!this.chatSessions[this.currentSessionId]) {
+        this.chatSessions[this.currentSessionId] = [];
+      }
+
+      this.chatSessions[this.currentSessionId].push({ question: this.input, answer: res, markdownHtml });
+      this.input = '';
+
+      this.$nextTick(() => {
+        this.scrollToBottom();
+      });
+
     },
     async loadChatHistory() {
-      try {
-        const history: Array<{ session_id: string, question: string, answer: string }> = await invoke('get_chat_history');
-        for (const entry of history) {
-          if (entry.answer == null) {
-            continue;
-          }
-          const markdownHtml = await this.renderMarkdown(entry.answer);
-          if (!this.chatSessions[entry.session_id]) {
-            this.chatSessions[entry.session_id] = [];
-          }
-          this.chatSessions[entry.session_id].push({
-            question: entry.question,
-            answer: entry.answer,
-            markdownHtml
-          });
-        }
+      const history = await this.getChatHistory();
 
-        if (!this.currentSessionId && Object.keys(this.chatSessions).length > 0) {
-          this.currentSessionId = Object.keys(this.chatSessions)[0];
-        }
-        this.$nextTick(() => {
-          this.scrollToBottom();
-        });
-      } catch (error) {
-        console.error('Failed to load chat history:', error);
+      if (!history) {
+        return;
       }
+      for (const entry of history) {
+        if (entry.answer == null) {
+          continue;
+        }
+        const markdownHtml = await this.renderMarkdown(entry.answer);
+        if (!this.chatSessions[entry.session_id]) {
+          this.chatSessions[entry.session_id] = [];
+        }
+        this.chatSessions[entry.session_id].push({
+          question: entry.question,
+          answer: entry.answer,
+          markdownHtml
+        });
+      }
+
+      if (!this.currentSessionId && Object.keys(this.chatSessions).length > 0) {
+        this.currentSessionId = Object.keys(this.chatSessions)[0];
+      }
+      this.$nextTick(() => {
+        this.scrollToBottom();
+      });
+
     },
     checkCtrlEnter(event: KeyboardEvent) {
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
@@ -180,16 +257,18 @@ export default defineComponent({
       });
     },
     async createNewSession() {
-      try {
-        const newSessionId: string = await invoke('generate_session_id');
-        this.chatSessions[newSessionId] = [];
-        this.currentSessionId = newSessionId;
-        this.$nextTick(() => {
-          this.scrollToBottom();
-        });
-      } catch (error) {
-        console.error('Failed to create a new session:', error);
+      const newSessionId = await this.generateSessionId();
+
+      if (!newSessionId) {
+        return;
       }
+
+      this.chatSessions[newSessionId] = [];
+      this.currentSessionId = newSessionId;
+      this.$nextTick(() => {
+        this.scrollToBottom();
+      });
+
     },
     scrollToBottom() {
       const chatHistoryElement = this.$el.querySelector('#chat-history');
