@@ -1,5 +1,10 @@
 ## Cuuri
 
+<p align="center">
+    <img src=https://github.com/takanotume24/cuuri/blob/master/src-tauri/icons/Square284x284Logo.png?raw=true width=138/>
+</p>
+<h1 align="center">Cuuri</h1>
+
 Cuuri is a GUI client for ChatGPT built with Tauri, Vue, and TypeScript.
 
 ![Screenshot](./public/screenshot.png)
