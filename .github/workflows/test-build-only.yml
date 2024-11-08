@@ -4,10 +4,8 @@ on:
   push:
     branches-ignore:
       - release
-concurrency:
-    group: ${{ github.workflow }}-${{ github.ref }}
-    cancel-in-progress: true
-
+  pull_request:
+    
 jobs:
   test-tauri:
     strategy:
