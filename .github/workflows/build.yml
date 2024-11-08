@@ -23,9 +23,10 @@ jobs:
             args: ''
           - platform: 'windows-latest'
             args: ''
-            
+
   build:
     runs-on: ${{ matrix.platform }}
+    needs: call-common-workflow
     strategy:
       fail-fast: false
       matrix:
