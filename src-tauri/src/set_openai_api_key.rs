@@ -4,7 +4,7 @@ use std::fs;
 #[tauri::command]
 pub async fn set_openai_api_key(api_key: String) -> Result<(), String> {
     let mut config_path = dirs::home_dir().expect("Failed to get home directory");
-    config_path.push(".chauri/config.toml");
+    config_path.push(".cuuri/config.toml");
 
     let mut config = Config::from_file(config_path.to_str().unwrap())
         .map_err(|e| format!("Failed to load configuration: {}", e))?;

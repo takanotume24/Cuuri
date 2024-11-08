@@ -3,8 +3,6 @@ use diesel::r2d2::{self, ConnectionManager};
 use diesel::sqlite::SqliteConnection;
 use std::sync::Arc;
 
-pub struct ApiKey(pub String);
-
 #[derive(Clone)]
 pub struct Database {
     pub pool: Arc<r2d2::Pool<ConnectionManager<SqliteConnection>>>,

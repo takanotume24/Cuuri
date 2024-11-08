@@ -1,4 +1,4 @@
-use crate::database::{ApiKey, Database};
+use crate::database::Database;
 use crate::get_db_connection::get_db_connection;
 use crate::models::{ChatHistory, NewChatHistory};
 use crate::schema::chat_history::dsl::*;
@@ -13,7 +13,7 @@ pub async fn chat_gpt(
     input_session_id: String,
     message: String,
     model: String,
-    state: State<'_, ApiKey>,
+    api_key: String,
     db: State<'_, Database>,
 ) -> Result<String, String> {
     // Use the helper function to get a mutable connection
@@ -50,7 +50,7 @@ pub async fn chat_gpt(
     let client = reqwest::Client::new();
     let res = client
         .post("https://api.openai.com/v1/chat/completions")
-        .header("Authorization", format!("Bearer {}", state.0))
+        .header("Authorization", format!("Bearer {}", api_key))
         .json(&request_body)
         .send()
         .await

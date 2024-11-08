@@ -1,22 +1,23 @@
-## Chauri
-ChauriはTauri + Vue + Typescriptで作られたChatGPT用GUIクライアントです。
+## Cuuri
 
-### 特徴
-- プライバシー
-  - あなたのデータはOpenAI以外のどこにも送信しません。全てのデータはあなたのストレージの中にあります。デバッグログを送信することもありません。
+<p align="center">
+    <img src=https://github.com/takanotume24/cuuri/blob/master/src-tauri/icons/Square284x284Logo.png?raw=true width=138/>
+</p>
+<h1 align="center">Cuuri</h1>
 
-### 使い方
-1. chauri用のデータディレクトリを作成してください。
+Cuuri is a GUI client for ChatGPT built with Tauri, Vue, and TypeScript.
 
-```
-$ mkdir $USER/.chauri
-```
+![Screenshot](./public/screenshot.png)
 
-2. `$USER/.chauri/.env`ファイル内に以下の内容を記述してください。
+### Features
 
-```
-OPENAI_API_KEY=[your OpenAI API Key]
-DEFAULT_MODEL=gpt-3.5-turbo
-```
+- Privacy
+  - Your data is not sent anywhere except to OpenAI. All data resides within your storage. No debug logs are sent.
 
-3. Chauriを使い始めます！
+### Customize
+All Cuuri data is saved under `$HOME/.cuuri`. Typically, the following files are generated automatically, so there's no need to edit them manually.
+
+- `$HOME/.cuuri/chat.db`: The chat history is saved here.
+- `$HOME/.cuuri/config.toml`
+  - `default_model`: You can set the model that is selected at startup. Make sure the model name matches the one shown in the list.
+  - `openai_api_key`: Set your OpenAI API key here.

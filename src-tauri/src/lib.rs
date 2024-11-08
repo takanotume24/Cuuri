@@ -9,17 +9,16 @@ mod database;
 mod generate_session_id;
 mod get_available_models;
 mod get_chat_history;
+mod get_config;
 mod get_db_connection;
 mod get_default_model;
 mod get_openai_api_key;
 mod models;
 mod schema;
 mod set_openai_api_key;
-mod get_config;
 
 use commands::*;
-use config::Config;
-use database::{ApiKey, Database};
+use database::Database;
 use generate_session_id::generate_session_id;
 use get_available_models::get_available_models;
 use get_chat_history::get_chat_history;
@@ -35,7 +34,7 @@ fn shutdown(database: &Database) {
 
 pub fn run() {
     let mut config_path = dirs::home_dir().expect("Failed to get home directory");
-    config_path.push(".chauri/config.toml");
+    config_path.push(".cuuri/config.toml");
 
     if !config_path.exists() {
         if let Some(parent) = config_path.parent() {
@@ -49,13 +48,8 @@ pub fn run() {
         println!("Configuration file created at {:?}", config_path);
     }
 
-    let config =
-        Config::from_file(config_path.to_str().unwrap()).expect("Failed to load configuration");
-
-    let api_key = config.openai_api_key;
-
     let mut db_path = dirs::home_dir().expect("Failed to get home directory");
-    db_path.push(".chauri/chat.db");
+    db_path.push(".cuuri/chat.db");
 
     if let Some(parent) = db_path.parent() {
         fs::create_dir_all(parent).expect("Failed to create directories for database file");
@@ -67,7 +61,6 @@ pub fn run() {
     database.initialize();
 
     tauri::Builder::default()
-        .manage(ApiKey(api_key))
         .manage(database.clone())
         .invoke_handler(tauri::generate_handler![
             chat_gpt,

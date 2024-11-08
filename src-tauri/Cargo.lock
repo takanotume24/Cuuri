@@ -339,27 +339,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 
 [[package]]
-name = "chauri"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "diesel",
- "dirs",
- "dotenvy",
- "r2d2",
- "reqwest",
- "rusqlite",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-shell",
- "tokio",
- "toml 0.8.19",
- "uuid",
-]
-
-[[package]]
 name = "chrono"
 version = "0.4.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -548,6 +527,27 @@ checksum = "edb49164822f3ee45b17acd4a208cfc1251410cf0cad9a833234c9890774dd9f"
 dependencies = [
  "quote",
  "syn 2.0.85",
+]
+
+[[package]]
+name = "cuuri"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "diesel",
+ "dirs",
+ "dotenvy",
+ "r2d2",
+ "reqwest",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-shell",
+ "tokio",
+ "toml 0.8.19",
+ "uuid",
 ]
 
 [[package]]
