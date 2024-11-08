@@ -1,13 +1,10 @@
-use crate::database::ApiKey;
-use tauri::State;
-
 #[tauri::command]
-pub async fn get_available_models(state: State<'_, ApiKey>) -> Result<Vec<String>, String> {
+pub async fn get_available_models(api_key: String) -> Result<Vec<String>, String> {
     let client = reqwest::Client::new();
 
     let res = client
         .get("https://api.openai.com/v1/models")
-        .header("Authorization", format!("Bearer {}", state.0))
+        .header("Authorization", format!("Bearer {}", api_key))
         .send()
         .await
         .map_err(|e| e.to_string())?;
