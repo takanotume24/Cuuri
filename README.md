@@ -1,22 +1,9 @@
 ## Chauri
-ChauriはTauri + Vue + Typescriptで作られたChatGPT用GUIクライアントです。
+Chauri is a GUI client for ChatGPT built with Tauri, Vue, and TypeScript.
 
-### 特徴
-- プライバシー
-  - あなたのデータはOpenAI以外のどこにも送信しません。全てのデータはあなたのストレージの中にあります。デバッグログを送信することもありません。
+![Screenshot](./public/screenshot.png)
 
-### 使い方
-1. chauri用のデータディレクトリを作成してください。
+### Features
 
-```
-$ mkdir $USER/.chauri
-```
-
-2. `$USER/.chauri/.env`ファイル内に以下の内容を記述してください。
-
-```
-OPENAI_API_KEY=[your OpenAI API Key]
-DEFAULT_MODEL=gpt-3.5-turbo
-```
-
-3. Chauriを使い始めます！
+- Privacy
+  - Your data is not sent anywhere except to OpenAI. All data resides within your storage. No debug logs are sent.
