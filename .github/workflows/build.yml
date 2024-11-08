@@ -6,24 +6,6 @@ on:
       - 'release'
 
 jobs:
-  call-common-workflow:
-    uses: ./.github/workflows/build-common.yml
-    with:
-      platform: ${{ matrix.platform }}
-      args: ${{ matrix.args }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: 'macos-latest'
-            args: '--target aarch64-apple-darwin'
-          - platform: 'macos-latest'
-            args: '--target x86_64-apple-darwin'
-          - platform: 'ubuntu-22.04'
-            args: ''
-          - platform: 'windows-latest'
-            args: ''
-            
   build:
     runs-on: ${{ matrix.platform }}
     strategy:
@@ -40,6 +22,7 @@ jobs:
             args: ''
 
     steps:
+      - uses: actions/checkout@v4
       - name: Call Common Build Steps
         uses: ./.github/workflows/build-common.yml
         with:
