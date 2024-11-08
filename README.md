@@ -1,5 +1,5 @@
-## Chauri
-Chauri is a GUI client for ChatGPT built with Tauri, Vue, and TypeScript.
+## Cuuri
+Cuuri is a GUI client for ChatGPT built with Tauri, Vue, and TypeScript.
 
 ![Screenshot](./public/screenshot.png)
 

@@ -18,7 +18,6 @@ mod schema;
 mod set_openai_api_key;
 
 use commands::*;
-use config::Config;
 use database::Database;
 use generate_session_id::generate_session_id;
 use get_available_models::get_available_models;
@@ -35,7 +34,7 @@ fn shutdown(database: &Database) {
 
 pub fn run() {
     let mut config_path = dirs::home_dir().expect("Failed to get home directory");
-    config_path.push(".chauri/config.toml");
+    config_path.push(".cuuri/config.toml");
 
     if !config_path.exists() {
         if let Some(parent) = config_path.parent() {
@@ -50,7 +49,7 @@ pub fn run() {
     }
 
     let mut db_path = dirs::home_dir().expect("Failed to get home directory");
-    db_path.push(".chauri/chat.db");
+    db_path.push(".cuuri/chat.db");
 
     if let Some(parent) = db_path.parent() {
         fs::create_dir_all(parent).expect("Failed to create directories for database file");
