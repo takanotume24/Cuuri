@@ -1,8 +1,9 @@
 name: "build"
 
 on: [push]
-
-# This workflow will build your tauri app without uploading it anywhere.
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
 
 jobs:
   test-tauri:
