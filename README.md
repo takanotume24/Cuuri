@@ -1,5 +1,3 @@
-## Cuuri
-
 <p align="center">
     <img src=https://github.com/takanotume24/cuuri/blob/master/src-tauri/icons/Square284x284Logo.png?raw=true width=138/>
 </p>
