@@ -14,6 +14,34 @@ Cuuri is a GUI client for ChatGPT built with Tauri, Vue, and TypeScript.
 - Privacy
   - Your data is not sent anywhere except to OpenAI. All data resides within your storage. No debug logs are sent.
 
+### Installation
+
+- macOS
+  - Unfortunately, you need to build from source. It seems that I need to sign the binaries to make them executable on macOS. I plan to address this in the future.
+- Windows
+  - Download and run `Cuuri_[version]_x64-setup.exe` from <https://github.com/takanotume24/Cuuri/releases/tag/app-v0.1.0>.
+- Linux
+  - Download your preferred executable format from <https://github.com/takanotume24/Cuuri/releases/tag/app-v0.1.0>.
+
+### Build Instructions
+
+1. Install the necessary dependencies by following the guide at <https://v2.tauri.app/start/prerequisites/>.
+2. Clone this repository.
+
+  ```
+  $ https://github.com/takanotume24/Cuuri.git
+  ```
+
+3. Build the project.
+
+  ```
+  $ npm run tauri build
+  ```
+
+4. Run the built binary to install.
+   - macOS: `src-tauri/target/release/bundle/dmg`
+   - Windows: `src-tauri/target/release/`
+
 ### Customize
 All Cuuri data is saved under `$HOME/.cuuri`. Typically, the following files are generated automatically, so there's no need to edit them manually.
 
@@ -21,3 +49,4 @@ All Cuuri data is saved under `$HOME/.cuuri`. Typically, the following files are
 - `$HOME/.cuuri/config.toml`
   - `default_model`: You can set the model that is selected at startup. Make sure the model name matches the one shown in the list.
   - `openai_api_key`: Set your OpenAI API key here.
+
