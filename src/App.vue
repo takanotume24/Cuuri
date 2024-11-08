@@ -90,7 +90,7 @@ export default defineComponent({
     }
   },
   watch: {
-    async apiKeySet(newValue, oldValue) {
+    async apiKeySet(newValue, _) {
       const key = await invoke<string>('get_openai_api_key');
       if (!this.selectedModel && key && newValue) {
         console.log('apiKeySet changed');
