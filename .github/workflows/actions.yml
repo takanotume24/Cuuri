@@ -2,8 +2,6 @@ name: 'publish'
 
 on:
   push:
-    branches-ignore:
-      - 'release' # Ignore the release branch for the build job
 
 jobs:
   build:
