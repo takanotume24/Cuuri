@@ -46,8 +46,12 @@ jobs:
       - name: install frontend dependencies
         run: npm install # change this to npm, pnpm or bun depending on which one you use.
 
-      - name: build the app
-        run: npm run build # or the command you use to build your application
+      # If tagName and releaseId are omitted tauri-action will only build the app and won't try to upload any assets.
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: ${{ matrix.args }}
 
   release:
     if: github.ref == 'refs/heads/release'
