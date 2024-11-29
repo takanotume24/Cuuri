@@ -1,7 +1,7 @@
 <template>
     <div class="model-selector">
         <label for="model-select">Select Model:</label>
-        <select id="model-select" v-model="selectedModel">
+        <select v-model="internalSelectedModel" @change="updateValue">
             <option v-for="model in availableModels" :key="model" :value="model">
                 {{ model }}
             </option>
@@ -16,15 +16,19 @@ import { getApiKey } from './../getApiKey';
 
 export default {
     props: {
+        selectedModel: {
+            type: String,
+            default: '',
+        },
         isApiKeySet: {
             type: Boolean,
-            required: true
-        }
+            required: true,
+        },
     },
     data() {
         return {
-            selectedModel: '',
             availableModels: [] as string[],
+            internalSelectedModel: this.selectedModel
         };
     },
     async mounted() {
@@ -33,16 +37,23 @@ export default {
     watch: {
         isApiKeySet(v: boolean) {
             if (v) {
-                this.fetchAvailableModels()
+                this.fetchAvailableModels();
             }
-        }
+        },
+        selectedModel(newVal: string) {
+            this.internalSelectedModel = newVal;
+        },
     },
     methods: {
+        updateValue(event: Event) {
+            const target = event.target as HTMLSelectElement;
+            this.$emit('update:selectedModel', target.value);
+        },
         async fetchAvailableModels() {
             const apiKey = await getApiKey();
             if (!apiKey) {
                 return;
-            };
+            }
 
             const models = await getAvailableModels(apiKey);
             if (!models) {
@@ -53,15 +64,15 @@ export default {
             if (models.length > 0) {
                 const defaultModel = await getDefaultModel();
                 if (!defaultModel) {
-                    this.selectedModel = '';
+                    this.$emit('update:selectedModel', '');
                     return;
                 }
-                this.selectedModel = models.includes(defaultModel) ? defaultModel : '';
+                this.internalSelectedModel = models.includes(defaultModel) ? defaultModel : '';
+                this.$emit('update:selectedModel', this.internalSelectedModel);
             }
         },
-    }
-
-}
+    },
+};
 </script>
 
 <style>

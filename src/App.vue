@@ -2,21 +2,24 @@
   <div id="app">
     <aside id="chat-sessions">
       <ul>
-        <li v-for="(_, sessionId) in chatSessions" :key="sessionId" :class="{ active: currentSessionId === sessionId }"
+        <li v-for="(_, sessionId) in rawChats" :key="sessionId" :class="{ active: currentSessionId === sessionId }"
           @click="loadSession(sessionId)">
           Chat Session {{ sessionId }}
         </li>
       </ul>
       <button @click="createNewSession">New Session</button>
-      <ModelSelector v-if="isApiKeySet" :isApiKeySet="isApiKeySet" />
+      <ModelSelector v-if="isApiKeySet" :isApiKeySet="isApiKeySet" v-model:selectedModel="selectedModel" />
     </aside>
     <main>
       <ApiKeyDialog v-if="showDialog" @api-key-set="onApiKeySaved" />
       <header>
         <div id="chat-history">
           <div v-for="(entry, index) in chatHistory" :key="index" class="chat-entry">
-            <div class="user-message"><strong>You:</strong> {{ entry.question }}</div>
-            <div class="gpt-response" v-html="entry.markdownHtml"></div>
+            <div class="user-message">
+              <strong>You:</strong>
+              <pre>{{ entry.question }}</pre>
+            </div>
+            <div class="gpt-response" v-html="entry.answer"></div>
           </div>
         </div>
         <div>
@@ -40,19 +43,29 @@ import { getChatGptResponse } from './getChatGptResponse';
 import { generateSessionId } from './generateSessionId';
 import ModelSelector from './components/ModelSelector.vue';
 import { renderMarkdown } from './renderMarkdown';
+import { getRawChatsFromDatabaseChatEntries } from './getRawChatsFromDatabaseChatEntries';
+import { SessionId, UserInput, ModelName, ApiKey, HtmlChatEntry, RawChats } from './types';
 
-interface ChatEntry {
-  question: string;
-  answer: string;
-  markdownHtml: string;
+interface ComponentData {
+  input: string;
+  rawChats: RawChats;
+  currentSessionId: SessionId | null;
+  selectedModel: string;
+  apiKeyInput: string;
+  isApiKeySet: boolean;
+  showDialog: boolean;
 }
 
 export default defineComponent({
-  data() {
+  components: {
+    ModelSelector,
+    ApiKeyDialog,
+  },
+  data(): ComponentData {
     return {
       input: '',
-      chatSessions: {} as Record<string, ChatEntry[]>,
-      currentSessionId: '',
+      rawChats: {},
+      currentSessionId: null,
       selectedModel: '',
       apiKeyInput: '',
       isApiKeySet: false,
@@ -62,8 +75,14 @@ export default defineComponent({
 
   computed: {
     chatHistory() {
-      return this.chatSessions[this.currentSessionId] || [];
-    }
+      if (!this.currentSessionId) return [];
+      const raw_chat_entry_array = this.rawChats[this.currentSessionId];
+      const html_chat_entry_array: Array<HtmlChatEntry> = raw_chat_entry_array.map(x => ({
+        question: x.question,
+        answer: renderMarkdown(x.answer),
+      }));
+      return html_chat_entry_array;
+    },
   },
 
   async mounted() {
@@ -74,43 +93,40 @@ export default defineComponent({
       return;
     } else {
       this.isApiKeySet = true;
+      this.showDialog = false;
       await this.loadChatHistory();
-      if (Object.keys(this.chatSessions).length === 0) {
+      if (Object.keys(this.rawChats).length === 0) {
         await this.createNewSession();
       }
     }
   },
 
-  watch: {
-  },
+  watch: {},
 
   methods: {
     async handleSubmit() {
       if (this.input.trim() === '') return;
       const api_key = await getApiKey();
 
-      if (!api_key) {
-        return;
-      }
+      if (!api_key) return;
+      if (!this.currentSessionId) return;
+
+      const input = this.input as UserInput;
+      const selectedModel = this.selectedModel as ModelName;
 
       const res = await getChatGptResponse(
         this.currentSessionId,
-        this.input,
-        this.selectedModel,
-        api_key,
-      )
+        input,
+        selectedModel,
+        api_key as ApiKey,
+      );
+      if (!res) return;
 
-      if (!res) {
-        return
+      if (!this.rawChats[this.currentSessionId]) {
+        this.rawChats[this.currentSessionId] = [];
       }
 
-      const markdownHtml: string = await renderMarkdown(res);
-
-      if (!this.chatSessions[this.currentSessionId]) {
-        this.chatSessions[this.currentSessionId] = [];
-      }
-
-      this.chatSessions[this.currentSessionId].push({ question: this.input, answer: res, markdownHtml });
+      this.rawChats[this.currentSessionId].push({ question: input, answer: res });
       this.input = '';
 
       this.$nextTick(() => {
@@ -120,32 +136,14 @@ export default defineComponent({
 
     async loadChatHistory() {
       const history = await getChatHistory();
+      if (!history) return;
+      if (history.length == 0) return;
 
-      if (!history) {
-        return;
-      }
-      for (const entry of history) {
-        if (entry.answer == null) {
-          continue;
-        }
-        const markdownHtml = await renderMarkdown(entry.answer);
-        if (!this.chatSessions[entry.session_id]) {
-          this.chatSessions[entry.session_id] = [];
-        }
-        this.chatSessions[entry.session_id].push({
-          question: entry.question,
-          answer: entry.answer,
-          markdownHtml
-        });
-      }
+      this.rawChats = getRawChatsFromDatabaseChatEntries(history);
 
-      if (!this.currentSessionId && Object.keys(this.chatSessions).length > 0) {
-        this.currentSessionId = Object.keys(this.chatSessions)[0];
-      }
       this.$nextTick(() => {
         this.scrollToBottom();
       });
-
     },
     checkCtrlEnter(event: KeyboardEvent) {
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
@@ -153,7 +151,7 @@ export default defineComponent({
       }
     },
 
-    loadSession(sessionId: string) {
+    loadSession(sessionId: SessionId) {
       this.currentSessionId = sessionId;
       this.$nextTick(() => {
         this.scrollToBottom();
@@ -162,12 +160,9 @@ export default defineComponent({
 
     async createNewSession() {
       const newSessionId = await generateSessionId();
+      if (!newSessionId) return;
 
-      if (!newSessionId) {
-        return;
-      }
-
-      this.chatSessions[newSessionId] = [];
+      this.rawChats[newSessionId] = [];
       this.currentSessionId = newSessionId;
       this.$nextTick(() => {
         this.scrollToBottom();
@@ -185,7 +180,7 @@ export default defineComponent({
       this.showDialog = false;
       this.isApiKeySet = true;
       await this.loadChatHistory();
-      if (Object.keys(this.chatSessions).length === 0) {
+      if (Object.keys(this.rawChats).length === 0) {
         await this.createNewSession();
       }
     },
@@ -281,7 +276,6 @@ header {
 
 .user-message {
   margin-bottom: 5px;
-  font-weight: bold;
 }
 
 .input-form {

@@ -1,5 +1,7 @@
 import { marked } from "marked";
+import { Markdown, Html } from "./types";
 
-export async function renderMarkdown(markdownText: string): Promise<string> {
-  return Promise.resolve(marked(markdownText));
+export function renderMarkdown(markdownText: Markdown): Html {
+  const html = marked(markdownText) as Html;
+  return html;
 }

@@ -1,11 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
+import { SessionId, UserInput, ModelName, ApiKey, Markdown } from "./types";
 
 export async function getChatGptResponse(
-  currentSessionId: string,
-  input: string,
-  selectedModel: string,
-  apiKey: string
-): Promise<string | null> {
+  currentSessionId: SessionId,
+  input: UserInput,
+  selectedModel: ModelName,
+  apiKey: ApiKey
+): Promise<Markdown | null> {
   try {
     return await invoke("chat_gpt", {
       inputSessionId: currentSessionId,

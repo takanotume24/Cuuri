@@ -1,10 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
+import { DatabaseChatEntry } from "./types";
 
-export async function getChatHistory(): Promise<Array<{
-  session_id: string;
-  question: string;
-  answer: string;
-}> | null> {
+export async function getChatHistory(): Promise<Array<DatabaseChatEntry> | null> {
   try {
     return await invoke("get_chat_history");
   } catch (error) {
