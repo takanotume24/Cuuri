@@ -33,14 +33,13 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import { invoke } from '@tauri-apps/api/core';
-import { marked } from 'marked';
 import ApiKeyDialog from './components/ApiKeyDialog.vue';
 import { getApiKey } from './getApiKey';
 import { getChatHistory } from './getChatHistory';
 import { getChatGptResponse } from './getChatGptResponse';
 import { generateSessionId } from './generateSessionId';
 import ModelSelector from './components/ModelSelector.vue';
+import { renderMarkdown } from './renderMarkdown';
 
 interface ChatEntry {
   question: string;
@@ -60,11 +59,13 @@ export default defineComponent({
       showDialog: true,
     };
   },
+
   computed: {
     chatHistory() {
       return this.chatSessions[this.currentSessionId] || [];
     }
   },
+
   async mounted() {
     const key = await getApiKey();
 
@@ -79,11 +80,11 @@ export default defineComponent({
       }
     }
   },
+
   watch: {
   },
+
   methods: {
-
-
     async handleSubmit() {
       if (this.input.trim() === '') return;
       const api_key = await getApiKey();
@@ -103,7 +104,7 @@ export default defineComponent({
         return
       }
 
-      const markdownHtml: string = await this.renderMarkdown(res);
+      const markdownHtml: string = await renderMarkdown(res);
 
       if (!this.chatSessions[this.currentSessionId]) {
         this.chatSessions[this.currentSessionId] = [];
@@ -115,8 +116,8 @@ export default defineComponent({
       this.$nextTick(() => {
         this.scrollToBottom();
       });
-
     },
+
     async loadChatHistory() {
       const history = await getChatHistory();
 
@@ -127,7 +128,7 @@ export default defineComponent({
         if (entry.answer == null) {
           continue;
         }
-        const markdownHtml = await this.renderMarkdown(entry.answer);
+        const markdownHtml = await renderMarkdown(entry.answer);
         if (!this.chatSessions[entry.session_id]) {
           this.chatSessions[entry.session_id] = [];
         }
@@ -151,15 +152,14 @@ export default defineComponent({
         this.handleSubmit();
       }
     },
-    async renderMarkdown(markdownText: string): Promise<string> {
-      return Promise.resolve(marked(markdownText));
-    },
+
     loadSession(sessionId: string) {
       this.currentSessionId = sessionId;
       this.$nextTick(() => {
         this.scrollToBottom();
       });
     },
+
     async createNewSession() {
       const newSessionId = await generateSessionId();
 
@@ -172,26 +172,15 @@ export default defineComponent({
       this.$nextTick(() => {
         this.scrollToBottom();
       });
-
     },
+
     scrollToBottom() {
       const chatHistoryElement = this.$el.querySelector('#chat-history');
       if (chatHistoryElement) {
         chatHistoryElement.scrollTop = chatHistoryElement.scrollHeight;
       }
     },
-    async saveApiKey() {
-      try {
-        await invoke('set_openai_api_key', { apiKey: this.apiKeyInput });
-        this.isApiKeySet = true;
-        await this.loadChatHistory();
-        if (Object.keys(this.chatSessions).length === 0) {
-          await this.createNewSession();
-        }
-      } catch (error) {
-        console.error('Failed to save API key:', error);
-      }
-    },
+
     async onApiKeySaved() {
       this.showDialog = false;
       this.isApiKeySet = true;
