@@ -8,16 +8,10 @@
         </li>
       </ul>
       <button @click="createNewSession">New Session</button>
-      <div class="model-selector">
-        <label for="model-select">Select Model:</label>
-        <select id="model-select" v-model="selectedModel">
-          <option v-for="model in availableModels" :key="model" :value="model">
-            {{ model }}
-          </option>
-        </select>
-      </div>
+      <ModelSelector v-if="isApiKeySet" :isApiKeySet="isApiKeySet" />
     </aside>
     <main>
+      <ApiKeyDialog v-if="showDialog" @api-key-set="onApiKeySaved" />
       <header>
         <div id="chat-history">
           <div v-for="(entry, index) in chatHistory" :key="index" class="chat-entry">
@@ -25,14 +19,7 @@
             <div class="gpt-response" v-html="entry.markdownHtml"></div>
           </div>
         </div>
-        <div v-if="!apiKeySet" class="modal-overlay">
-          <div class="modal-dialog">
-            <h2>Enter your OpenAI API Key</h2>
-            <input v-model="apiKeyInput" placeholder="Enter your OpenAI API key" />
-            <button @click="saveApiKey">Save API Key</button>
-          </div>
-        </div>
-        <div v-else>
+        <div>
           <form @submit.prevent="handleSubmit" class="input-form">
             <textarea v-model="input" placeholder="Ask ChatGPT..." rows="4" cols="50"
               @keydown="checkCtrlEnter"></textarea>
@@ -48,6 +35,12 @@
 import { defineComponent } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { marked } from 'marked';
+import ApiKeyDialog from './components/ApiKeyDialog.vue';
+import { getApiKey } from './getApiKey';
+import { getChatHistory } from './getChatHistory';
+import { getChatGptResponse } from './getChatGptResponse';
+import { generateSessionId } from './generateSessionId';
+import ModelSelector from './components/ModelSelector.vue';
 
 interface ChatEntry {
   question: string;
@@ -62,9 +55,9 @@ export default defineComponent({
       chatSessions: {} as Record<string, ChatEntry[]>,
       currentSessionId: '',
       selectedModel: '',
-      availableModels: [] as string[],
       apiKeyInput: '',
-      apiKeySet: false,
+      isApiKeySet: false,
+      showDialog: true,
     };
   },
   computed: {
@@ -73,15 +66,14 @@ export default defineComponent({
     }
   },
   async mounted() {
-    const key = await this.getApiKey();
+    const key = await getApiKey();
 
     if (!key) {
-      this.apiKeySet = false;
+      this.isApiKeySet = false;
       return;
     } else {
-      this.apiKeySet = true;
+      this.isApiKeySet = true;
       await this.loadChatHistory();
-      await this.fetchAvailableModels();
       if (Object.keys(this.chatSessions).length === 0) {
         await this.createNewSession();
       }
@@ -90,105 +82,17 @@ export default defineComponent({
   watch: {
   },
   methods: {
-    async getApiKey(): Promise<string | null> {
-      try {
-        return await invoke<string>('get_openai_api_key');
-      } catch (error) {
-        console.error('Failed to check API key:', error);
-        return null;
-      }
-    },
-    async getAvailableModels(
-      apiKey: string,
-    ): Promise<string[] | null> {
-      try {
-        return await invoke<string[]>('get_available_models', {
-          apiKey: apiKey,
-        });
-      } catch (error) {
-        console.error('Failed to get Available models:', error);
-        return null;
-      }
-    },
-    async getDefaultModel(): Promise<string | null> {
-      try {
-        return await invoke<string>('get_default_model');
-      } catch (error) {
-        console.error('Failed to get default model:', error);
-        return null;
-      }
-    },
-    async generateSessionId(): Promise<string | null> {
-      try {
-        return await invoke<string>('generate_session_id');
-      } catch (error) {
-        console.error('Failed to generate session id:', error);
-        return null;
-      }
-    },
-    async getChatGptResponse(
-      currentSessionId: string,
-      input: string,
-      selectedModel: string,
-      apiKey: string,
-    ): Promise<string | null> {
-      try {
-        return await invoke('chat_gpt', {
-          inputSessionId: currentSessionId,
-          message: input,
-          model: selectedModel,
-          apiKey: apiKey,
-        });;
-      } catch (error) {
-        console.error('Failed to get the response from chatgpt api:', error);
-        return null;
-      }
-    },
-    async getChatHistory(): Promise<Array<{ session_id: string, question: string, answer: string }> | null> {
-      try {
-        return await invoke('get_chat_history');
-      } catch (error) {
-        console.error('Failed to get chat history:', error);
-        return null;
-      }
-    },
-    async fetchAvailableModels() {
-      const apiKey = await this.getApiKey();
 
-      if (!apiKey) {
-        return;
-      };
-
-      const models = await this.getAvailableModels(apiKey);
-
-      if (!models) {
-        return;
-      }
-
-      this.availableModels = models;
-      if (models.length > 0) {
-        const defaultModel = await this.getDefaultModel();
-
-        if (!defaultModel) {
-          this.selectedModel = '';
-          return;
-        }
-
-        this.selectedModel = models.includes(defaultModel) ? defaultModel : '';
-      }
-
-    },
 
     async handleSubmit() {
       if (this.input.trim() === '') return;
-
-      const api_key = await this.getApiKey();
+      const api_key = await getApiKey();
 
       if (!api_key) {
         return;
       }
 
-      const res = await this.getChatGptResponse(
+      const res = await getChatGptResponse(
         this.currentSessionId,
         this.input,
         this.selectedModel,
@@ -214,7 +118,7 @@ export default defineComponent({
 
     },
     async loadChatHistory() {
-      const history = await this.getChatHistory();
+      const history = await getChatHistory();
 
       if (!history) {
         return;
@@ -257,7 +161,7 @@ export default defineComponent({
       });
     },
     async createNewSession() {
-      const newSessionId = await this.generateSessionId();
+      const newSessionId = await generateSessionId();
 
       if (!newSessionId) {
         return;
@@ -279,14 +183,21 @@ export default defineComponent({
     async saveApiKey() {
       try {
         await invoke('set_openai_api_key', { apiKey: this.apiKeyInput });
-        this.apiKeySet = true;
+        this.isApiKeySet = true;
         await this.loadChatHistory();
-        await this.fetchAvailableModels();
         if (Object.keys(this.chatSessions).length === 0) {
           await this.createNewSession();
         }
       } catch (error) {
         console.error('Failed to save API key:', error);
+      }
+    },
+    async onApiKeySaved() {
+      this.showDialog = false;
+      this.isApiKeySet = true;
+      await this.loadChatHistory();
+      if (Object.keys(this.chatSessions).length === 0) {
+        await this.createNewSession();
       }
     },
   },
@@ -311,35 +222,6 @@ export default defineComponent({
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.modal-dialog {
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  text-align: center;
-}
-
-.modal-dialog input {
-  width: 80%;
-  padding: 10px;
-  margin-bottom: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-.modal-dialog button {
-  padding: 10px 20px;
-  border: none;
-  background-color: #007bff;
-  color: white;
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-.modal-dialog button:hover {
-  background-color: #0056b3;
 }
 
 aside#chat-sessions {
@@ -380,10 +262,6 @@ aside#chat-sessions {
 
 #chat-sessions button:hover {
   background-color: #d0d0d0;
-}
-
-.model-selector {
-  margin-top: auto;
 }
 
 main {
