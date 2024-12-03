@@ -136,10 +136,13 @@ export default defineComponent({
 
     async loadChatHistory() {
       const history = await getChatHistory();
+
       if (!history) return;
       if (history.length == 0) return;
 
-      this.rawChats = getRawChatsFromDatabaseChatEntries(history);
+      const reversedHistory = history.reverse()
+      this.currentSessionId = reversedHistory[0].session_id
+      this.rawChats = getRawChatsFromDatabaseChatEntries(reversedHistory);
 
       this.$nextTick(() => {
         this.scrollToBottom();
