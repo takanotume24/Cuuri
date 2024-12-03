@@ -1,15 +1,10 @@
 <template>
     <aside id="chat-sessions" class="d-flex flex-column bg-light p-3">
         <NewSessionButton @new-session="createNewSession" />
-            <ModelSelector v -if=" isApiKeySet" :isApiKeySet="isApiKeySet" :selectedModel="selectedModel"
+        <ModelSelector v-if="isApiKeySet" :isApiKeySet="isApiKeySet" :selectedModel="selectedModel"
             @update:selectedModel="handleModelChange" class="mb-3" />
-        <ul class="list-group list-group-flush flex-grow-1 overflow-auto mb-3">
-            <li v-for="sessionId in sessionIdList" :key="sessionId"
-                :class="['list-group-item', 'cursor-pointer', { active: currentSessionId === sessionId }]"
-                @click="selectSession(sessionId)">
-                Chat Session: {{ sessionId }}
-            </li>
-        </ul>
+        <SessionList :sessionIdList="sessionIdList" :currentSessionId="localCurrentSessionId"
+            @select-session="selectSession" />
     </aside>
 </template>
 
@@ -17,21 +12,22 @@
 import { defineComponent, PropType } from 'vue';
 import ModelSelector from './ModelSelector.vue';
 import NewSessionButton from './NewSessionButton.vue';
+import SessionList from './SessionList.vue';
 import { ModelName, SessionId } from '../types';
 import { getSessionIdList } from '../getSessionIdList';
 import { generateSessionId } from '../generateSessionId';
 
 export default defineComponent({
-    components: { ModelSelector, NewSessionButton },
+    components: { ModelSelector, NewSessionButton, SessionList },
     props: {
         currentSessionId: {
             type: [String, null] as PropType<SessionId | null>,
-            default: null
+            default: null,
         },
         isApiKeySet: Boolean,
         selectedModel: {
             type: [String, null] as PropType<ModelName | null>,
-            default: null
+            default: null,
         },
     },
     data() {
@@ -58,7 +54,6 @@ export default defineComponent({
         },
         async fetchSessionIdList() {
             try {
-                // Call your getSessionIdList function
                 const sessionIdList = await getSessionIdList();
                 if (!sessionIdList) return;
                 this.sessionIdList = sessionIdList;
@@ -70,8 +65,7 @@ export default defineComponent({
             const newSessionId = await generateSessionId();
             if (!newSessionId) return;
 
-            this.sessionIdList.push(newSessionId)
-            console.log(this.sessionIdList)
+            this.sessionIdList.push(newSessionId);
             this.$emit('update:currentSessionId', newSessionId);
         },
     },

@@ -7,7 +7,7 @@
     <main class="col-9 d-flex flex-column p-3">
       <ApiKeyDialog v-if="showDialog" @api-key-set="onApiKeySaved" />
       <header class="flex-grow-1 overflow-auto mb-3">
-        <ChatHistory :currentSessionId="currentSessionId" />
+        <ChatHistory :currentSessionId="currentSessionId" :lastAnswerReceivedTime="lastAnswerReceivedTime" />
       </header>
       <footer class="mt-auto">
         <ChatInputForm :onSubmit="handleSubmit" />
@@ -27,6 +27,7 @@ import { getDatabaseChatEntryList } from './getDatabaseChatEntryList';
 import { getChatGptResponse } from './getChatGptResponse';
 import { SessionId, UserInput, ModelName, ApiKey } from './types';
 import { EncodedImage } from './types';
+import dayjs from 'dayjs';
 
 interface ComponentData {
   input: string;
@@ -35,6 +36,7 @@ interface ComponentData {
   apiKeyInput: string;
   isApiKeySet: boolean;
   showDialog: boolean;
+  lastAnswerReceivedTime: dayjs.Dayjs | null;
 }
 
 export default defineComponent({
@@ -52,6 +54,7 @@ export default defineComponent({
       apiKeyInput: '',
       isApiKeySet: false,
       showDialog: true,
+      lastAnswerReceivedTime: null,
     };
   },
 
@@ -74,6 +77,7 @@ export default defineComponent({
   methods: {
     async handleSubmit(input: string, EncodedImageList?: EncodedImage[]) {
       if (input.trim() === '') return;
+
       const api_key = await getApiKey();
 
       if (!api_key) return;
@@ -90,6 +94,8 @@ export default defineComponent({
         EncodedImageList
       );
       if (!res) return;
+
+      this.lastAnswerReceivedTime = res.created_at
 
       this.$nextTick(() => {
         this.scrollToBottom();

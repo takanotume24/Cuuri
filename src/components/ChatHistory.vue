@@ -15,13 +15,18 @@ import { defineComponent, PropType } from 'vue';
 import { SessionId } from '../types';
 import { getDatabaseChatEntryBySession } from '../getDatabaseChatEntryBySession';
 import { DatabaseChatEntry } from '../types';
+import dayjs from 'dayjs';
 
 export default defineComponent({
     props: {
         currentSessionId: {
             type: [String, null] as PropType<SessionId | null>,
             default: null
-        }
+        },
+        lastAnswerReceivedTime: {
+            type: [Object, null] as PropType<dayjs.Dayjs | null>,
+            default: null
+        },
     },
     data() {
         return {
@@ -30,9 +35,11 @@ export default defineComponent({
     },
     watch: {
         async currentSessionId(newVal: SessionId, _: SessionId) {
-            const databaseChatEntryBySession = await getDatabaseChatEntryBySession(newVal);
-            if (!databaseChatEntryBySession) return
-            this.databaseChatEntryBySession = databaseChatEntryBySession
+            this.updateChatHistory(newVal);
+        },
+        lastAnswerReceivedTime(_, __) {
+            if (!this.currentSessionId) return;
+            this.updateChatHistory(this.currentSessionId);
         }
     },
     computed: {
@@ -42,6 +49,13 @@ export default defineComponent({
                 return a.created_at.diff(b.created_at);
             });
         }
-    }
+    },
+    methods: {
+        async updateChatHistory(session_id: SessionId) {
+            const databaseChatEntryBySession = await getDatabaseChatEntryBySession(session_id);
+            if (!databaseChatEntryBySession) return;
+            this.databaseChatEntryBySession = databaseChatEntryBySession
+        }
+    },
 });
 </script>
