@@ -1,12 +1,13 @@
 <template>
-    <aside id="chat-sessions">
-        <ul>
-            <li v-for="(_, sessionId) in rawChats" :key="sessionId" :class="{ active: currentSessionId === sessionId }"
+    <aside id="chat-sessions" class="d-flex flex-column bg-light p-3">
+        <ul class="list-group list-group-flush flex-grow-1 overflow-auto mb-3">
+            <li v-for="(_, sessionId) in rawChats" :key="sessionId" 
+                :class="['list-group-item', 'cursor-pointer', { active: currentSessionId === sessionId }]"
                 @click="loadSession(sessionId)">
                 Chat Session: {{ sessionId }}
             </li>
         </ul>
-        <button @click="$emit('new-session')">New Session</button>
+        <button class="btn btn-outline-secondary mb-3" @click="$emit('new-session')">New Session</button>
         <ModelSelector v-if="isApiKeySet" :isApiKeySet="isApiKeySet" :selectedModel="selectedModel"
             @update:selectedModel="handleModelChange" />
     </aside>
@@ -45,41 +46,28 @@ export default defineComponent({
 <style scoped>
 aside#chat-sessions {
     width: 25%;
-    background-color: #f0f0f0;
-    padding: 10px;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
+    max-width: 300px;
+    min-width: 200px;
 }
 
-#chat-sessions ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    flex-grow: 1;
-    overflow-y: auto;
-}
-
-#chat-sessions li {
-    padding: 10px;
+.list-group-item {
     cursor: pointer;
-    border-bottom: 1px solid #ccc;
+    transition: background-color 0.3s ease;
 }
 
-#chat-sessions li.active {
-    background-color: #dcdcdc;
+.list-group-item.active {
+    background-color: #007bff;
+    color: #fff;
     font-weight: bold;
 }
 
-#chat-sessions button {
-    margin-top: 10px;
-    padding: 10px;
-    border: none;
-    background-color: #e0e0e0;
-    cursor: pointer;
+.list-group-item:hover {
+    background-color: #e0e0e0; /* Change to a slightly darker shade for better contrast */
+    color: #333; /* Ensure text color remains readable */
 }
 
-#chat-sessions button:hover {
-    background-color: #d0d0d0;
+.btn {
+    width: 100%;
 }
 </style>
+

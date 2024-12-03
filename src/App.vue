@@ -25,12 +25,13 @@ import { generateSessionId } from './generateSessionId';
 import { renderMarkdown } from './renderMarkdown';
 import { getRawChatsFromDatabaseChatEntries } from './getRawChatsFromDatabaseChatEntries';
 import { SessionId, UserInput, ModelName, ApiKey, HtmlChatEntry, RawChats } from './types';
+import { EncodedImage } from './types';
 
 interface ComponentData {
   input: string;
   rawChats: RawChats;
   currentSessionId: SessionId | null;
-  selectedModel: string;
+  selectedModel: ModelName | null;
   apiKeyInput: string;
   isApiKeySet: boolean;
   showDialog: boolean;
@@ -48,7 +49,7 @@ export default defineComponent({
       input: '',
       rawChats: {},
       currentSessionId: null,
-      selectedModel: '',
+      selectedModel: null,
       apiKeyInput: '',
       isApiKeySet: false,
       showDialog: true,
@@ -84,7 +85,7 @@ export default defineComponent({
   },
 
   methods: {
-    async handleSubmit(input: string) {
+    async handleSubmit(input: string, EncodedImageList?: EncodedImage[]) {
       if (input.trim() === '') return;
       const api_key = await getApiKey();
 
@@ -99,6 +100,7 @@ export default defineComponent({
         userInput,
         selectedModel,
         api_key as ApiKey,
+        EncodedImageList
       );
       if (!res) return;
 

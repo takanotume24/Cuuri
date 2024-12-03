@@ -8,6 +8,7 @@ export type UserInput = ReadOnlyBrand<string, "UserInput">;
 
 export type ModelName = ReadOnlyBrand<string, "ModelName">;
 export type ApiKey = ReadOnlyBrand<string, "ApiKey">;
+export type EncodedImage = ReadOnlyBrand<string, "EncodedImage">;
 
 export interface DatabaseChatEntry {
   session_id: SessionId;
