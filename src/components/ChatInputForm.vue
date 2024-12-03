@@ -1,25 +1,13 @@
 <template>
   <form @submit.prevent="handleSubmit" class="input-form">
     <div class="form-group mb-3">
-      <textarea
-        v-model="input"
-        class="form-control"
-        placeholder="Ask ChatGPT..."
-        rows="4"
-        @keydown="checkCtrlEnter"
-      ></textarea>
+      <textarea v-model="input" class="form-control" placeholder="Ask ChatGPT..." rows="4"
+        @keydown="checkCtrlEnter"></textarea>
     </div>
     <div class="d-flex justify-content-between align-items-center">
       <!-- Hidden default file input -->
-      <input
-        type="file"
-        @change="handleFileChange"
-        accept="image/*"
-        multiple
-        class="form-control-file"
-        ref="fileInput"
-        style="display: none"
-      />
+      <input type="file" @change="handleFileChange" accept="image/*" multiple class="form-control-file" ref="fileInput"
+        style="display: none" />
       <!-- Custom button for file selection -->
       <button type="button" class="btn btn-secondary" @click="triggerFileInput">
         Select Files
@@ -102,39 +90,4 @@ export default defineComponent({
 </script>
 
 
-<style scoped>
-.input-form {
-  background-color: #f8f9fa;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.form-control {
-  resize: none;
-}
-
-.d-flex {
-  margin-top: 10px;
-}
-
-.mt-2 {
-  margin-top: 10px;
-}
-
-.btn-secondary {
-  margin-right: 10px;
-  /* Additional custom styles for the button can go here */
-  background-color: #6c757d;
-  color: #ffffff;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.btn-secondary:hover {
-  background-color: #5a6268;
-}
-</style>
+<style scoped></style>

@@ -1,13 +1,17 @@
 <template>
-  <div id="app">
-    <ChatSessions :rawChats="rawChats" :currentSessionId="currentSessionId" :isApiKeySet="isApiKeySet"
-      v-model:selectedModel="selectedModel" @new-session="createNewSession" @session-changed="loadSession" />
-    <main>
+  <div id="app" class="d-flex vh-100">
+    <aside class="col-3 overflow-auto border-end">
+      <ChatSessions v-model:currentSessionId="currentSessionId" :isApiKeySet="isApiKeySet"
+        v-model:selectedModel="selectedModel" />
+    </aside>
+    <main class="col-9 d-flex flex-column p-3">
       <ApiKeyDialog v-if="showDialog" @api-key-set="onApiKeySaved" />
-      <header>
-        <ChatHistory :chatHistory="chatHistory" />
-        <ChatInputForm :onSubmit="handleSubmit" />
+      <header class="flex-grow-1 overflow-auto mb-3">
+        <ChatHistory :currentSessionId="currentSessionId" />
       </header>
+      <footer class="mt-auto">
+        <ChatInputForm :onSubmit="handleSubmit" />
+      </footer>
     </main>
   </div>
 </template>
@@ -19,17 +23,13 @@ import ChatSessions from './components/ChatSessions.vue';
 import ChatHistory from './components/ChatHistory.vue';
 import ChatInputForm from './components/ChatInputForm.vue';
 import { getApiKey } from './getApiKey';
-import { getChatHistory } from './getChatHistory';
+import { getDatabaseChatEntryList } from './getDatabaseChatEntryList';
 import { getChatGptResponse } from './getChatGptResponse';
-import { generateSessionId } from './generateSessionId';
-import { renderMarkdown } from './renderMarkdown';
-import { getRawChatsFromDatabaseChatEntries } from './getRawChatsFromDatabaseChatEntries';
-import { SessionId, UserInput, ModelName, ApiKey, HtmlChatEntry, RawChats } from './types';
+import { SessionId, UserInput, ModelName, ApiKey } from './types';
 import { EncodedImage } from './types';
 
 interface ComponentData {
   input: string;
-  rawChats: RawChats;
   currentSessionId: SessionId | null;
   selectedModel: ModelName | null;
   apiKeyInput: string;
@@ -47,7 +47,6 @@ export default defineComponent({
   data(): ComponentData {
     return {
       input: '',
-      rawChats: {},
       currentSessionId: null,
       selectedModel: null,
       apiKeyInput: '',
@@ -57,15 +56,6 @@ export default defineComponent({
   },
 
   computed: {
-    chatHistory() {
-      if (!this.currentSessionId) return [];
-      const raw_chat_entry_array = this.rawChats[this.currentSessionId];
-      const html_chat_entry_array: Array<HtmlChatEntry> = raw_chat_entry_array.map(x => ({
-        question: x.question,
-        answer: renderMarkdown(x.answer),
-      }));
-      return html_chat_entry_array;
-    },
   },
 
   async mounted() {
@@ -78,9 +68,6 @@ export default defineComponent({
       this.isApiKeySet = true;
       this.showDialog = false;
       await this.loadChatHistory();
-      if (Object.keys(this.rawChats).length === 0) {
-        await this.createNewSession();
-      }
     }
   },
 
@@ -104,52 +91,27 @@ export default defineComponent({
       );
       if (!res) return;
 
-      if (!this.rawChats[this.currentSessionId]) {
-        this.rawChats[this.currentSessionId] = [];
-      }
-
-      this.rawChats[this.currentSessionId].push({ question: userInput, answer: res });
-
       this.$nextTick(() => {
         this.scrollToBottom();
       });
     },
 
     async loadChatHistory() {
-      const history = await getChatHistory();
+      const history = await getDatabaseChatEntryList();
 
       if (!history) return;
       if (history.length == 0) return;
 
       const reversedHistory = history.reverse();
       this.currentSessionId = reversedHistory[0].session_id;
-      this.rawChats = getRawChatsFromDatabaseChatEntries(reversedHistory);
 
-      this.$nextTick(() => {
-        this.scrollToBottom();
-      });
-    },
-
-    loadSession(sessionId: SessionId) {
-      this.currentSessionId = sessionId;
-      this.$nextTick(() => {
-        this.scrollToBottom();
-      });
-    },
-
-    async createNewSession() {
-      const newSessionId = await generateSessionId();
-      if (!newSessionId) return;
-
-      this.rawChats[newSessionId] = [];
-      this.currentSessionId = newSessionId;
       this.$nextTick(() => {
         this.scrollToBottom();
       });
     },
 
     scrollToBottom() {
-      const chatHistoryElement = this.$el.querySelector('#chat-history');
+      const chatHistoryElement = this.$el.querySelector('header');
       if (chatHistoryElement) {
         chatHistoryElement.scrollTop = chatHistoryElement.scrollHeight;
       }
@@ -159,33 +121,9 @@ export default defineComponent({
       this.showDialog = false;
       this.isApiKeySet = true;
       await this.loadChatHistory();
-      if (Object.keys(this.rawChats).length === 0) {
-        await this.createNewSession();
-      }
     },
   },
 });
 </script>
 
-<style scoped>
-#app {
-  display: flex;
-  width: 100%;
-  height: 100vh;
-  font-family: Arial, sans-serif;
-}
-
-main {
-  width: 75%;
-  display: flex;
-  flex-direction: column;
-  padding: 10px;
-  box-sizing: border-box;
-}
-
-header {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-}
-</style>
+<style scoped></style>
