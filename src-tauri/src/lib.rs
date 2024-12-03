@@ -3,7 +3,7 @@ use std::env;
 use std::fs;
 use std::io::Write;
 
-mod commands;
+mod get_chatgpt_response;
 mod config;
 mod database;
 mod generate_session_id;
@@ -17,7 +17,6 @@ mod models;
 mod schema;
 mod set_openai_api_key;
 
-use commands::*;
 use database::Database;
 use generate_session_id::generate_session_id;
 use get_available_models::get_available_models;
@@ -25,6 +24,7 @@ use get_chat_history::get_chat_history;
 use get_default_model::get_default_model;
 use get_openai_api_key::get_openai_api_key;
 use set_openai_api_key::set_openai_api_key;
+use get_chatgpt_response::get_chatgpt_response;
 
 fn shutdown(database: &Database) {
     database
@@ -63,7 +63,7 @@ pub fn run() {
     tauri::Builder::default()
         .manage(database.clone())
         .invoke_handler(tauri::generate_handler![
-            chat_gpt,
+            get_chatgpt_response,
             get_chat_history,
             generate_session_id,
             get_available_models,

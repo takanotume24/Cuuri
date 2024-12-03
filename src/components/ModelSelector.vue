@@ -13,12 +13,14 @@
 import { getAvailableModels } from './../getAvailableModels';
 import { getDefaultModel } from './../getDefaultModel';
 import { getApiKey } from './../getApiKey';
+import { PropType } from 'vue';
+import { ModelName } from '../types';
 
 export default {
     props: {
         selectedModel: {
-            type: String,
-            default: null,
+            type: [String, null] as PropType<ModelName | null>,
+            default: null
         },
     },
     data() {
