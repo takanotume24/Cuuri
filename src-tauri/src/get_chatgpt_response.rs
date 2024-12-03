@@ -12,7 +12,7 @@ use tauri::State;
 pub async fn get_chatgpt_response(
     input_session_id: String,
     message: String,
-    base64_image: Option<String>,  // Added parameter for base64 image
+    base64_images: Option<Vec<String>>,  // Changed to a vector of strings
     model: String,
     api_key: String,
     db: State<'_, Database>,
@@ -48,19 +48,21 @@ pub async fn get_chatgpt_response(
         })
         .collect();
 
-    // Construct the user message including the base64 image if provided
+    // Construct the user message including multiple base64 images if provided
     let mut user_content = vec![json!({
         "type": "text",
         "text": message.clone()
     })];
 
-    if let Some(image_data) = base64_image {
-        user_content.push(json!({
-            "type": "image_url",
-            "image_url": {
-                "url": format!("data:image/jpeg;base64,{}", image_data)
-            }
-        }));
+    if let Some(images) = base64_images {
+        for image_data in images {
+            user_content.push(json!({
+                "type": "image_url",
+                "image_url": {
+                    "url": format!("data:image/jpeg;base64,{}", image_data)
+                }
+            }));
+        }
     }
 
     messages.push(json!({

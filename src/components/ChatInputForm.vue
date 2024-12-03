@@ -10,35 +10,63 @@
       ></textarea>
     </div>
     <div class="d-flex justify-content-between align-items-center">
-      <input type="file" @change="handleFileChange" accept="image/*" class="form-control-file" />
+      <!-- Hidden default file input -->
+      <input
+        type="file"
+        @change="handleFileChange"
+        accept="image/*"
+        multiple
+        class="form-control-file"
+        ref="fileInput"
+        style="display: none"
+      />
+      <!-- Custom button for file selection -->
+      <button type="button" class="btn btn-secondary" @click="triggerFileInput">
+        Select Files
+      </button>
       <button type="submit" class="btn btn-primary">Send</button>
+    </div>
+    <div v-if="fileNames.length" class="mt-2">
+      <strong>Selected files:</strong>
+      <ul>
+        <li v-for="fileName in fileNames" :key="fileName">{{ fileName }}</li>
+      </ul>
     </div>
   </form>
 </template>
 
+
 <script lang="ts">
 import { defineComponent, ref, PropType } from 'vue';
 import { convertFileToBase64 } from '../convertFileToBase64';
+import { EncodedImage } from '../types';
 
 export default defineComponent({
   props: {
-    onSubmit: Function as PropType<(input: string, base64Image?: string) => void>,
+    onSubmit: Function as PropType<(input: string, base64Images?: EncodedImage[]) => void>,
   },
   setup(props) {
     const input = ref('');
-    const selectedFile = ref<File | null>(null);
+    const selectedFiles = ref<File[]>([]);
+    const fileNames = ref<string[]>([]);
+    const fileInput = ref<HTMLInputElement | null>(null);
 
     const handleSubmit = async () => {
       if (props.onSubmit && input.value.trim() !== '') {
-        let base64Image: string | undefined = undefined;
+        const base64Images: EncodedImage[] = [];
 
-        if (selectedFile.value) {
-          base64Image = await convertFileToBase64(selectedFile.value);
+        for (const file of selectedFiles.value) {
+          try {
+            const base64Image = await convertFileToBase64(file);
+            base64Images.push(base64Image);
+          } catch (error) {
+            console.error(`Error converting file ${file.name}:`, error);
+          }
         }
-
-        props.onSubmit(input.value, base64Image);
+        props.onSubmit(input.value, base64Images);
         input.value = '';
-        selectedFile.value = null;
+        selectedFiles.value = [];
+        fileNames.value = [];
       }
     };
 
@@ -50,20 +78,29 @@ export default defineComponent({
 
     const handleFileChange = (event: Event) => {
       const target = event.target as HTMLInputElement;
-      if (target.files && target.files[0]) {
-        selectedFile.value = target.files[0];
+      if (target.files) {
+        selectedFiles.value = Array.from(target.files);
+        fileNames.value = selectedFiles.value.map(file => file.name);
       }
+    };
+
+    const triggerFileInput = () => {
+      fileInput.value?.click();
     };
 
     return {
       input,
+      fileNames,
       handleSubmit,
       checkCtrlEnter,
       handleFileChange,
+      triggerFileInput,
+      fileInput,
     };
   },
 });
 </script>
+
 
 <style scoped>
 .input-form {
@@ -79,5 +116,25 @@ export default defineComponent({
 
 .d-flex {
   margin-top: 10px;
+}
+
+.mt-2 {
+  margin-top: 10px;
+}
+
+.btn-secondary {
+  margin-right: 10px;
+  /* Additional custom styles for the button can go here */
+  background-color: #6c757d;
+  color: #ffffff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
 }
 </style>

@@ -1,11 +1,11 @@
 <template>
-    <div id="chat-history">
-        <div v-for="(entry, index) in chatHistory" :key="index" class="chat-entry">
-            <div class="user-message">
+    <div id="chat-history" class="overflow-auto border-bottom mb-3 pr-3">
+        <div v-for="(entry, index) in chatHistory" :key="index" class="chat-entry mb-3">
+            <div class="user-message mb-1">
                 <strong>You:</strong>
-                <pre>{{ entry.question }}</pre>
+                <pre class="bg-light p-2 rounded">{{ entry.question }}</pre>
             </div>
-            <div class="gpt-response" v-html="entry.answer"></div>
+            <div class="gpt-response bg-secondary text-white p-2 rounded" v-html="entry.answer"></div>
         </div>
     </div>
 </template>
@@ -23,18 +23,6 @@ export default defineComponent({
 
 <style scoped>
 #chat-history {
-    flex-grow: 1;
-    overflow-y: auto;
-    border-bottom: 1px solid #ccc;
-    margin-bottom: 10px;
-    padding-right: 10px;
-}
-
-.chat-entry {
-    margin-bottom: 10px;
-}
-
-.user-message {
-    margin-bottom: 5px;
+    max-height: 500px; /* Example height, adjust as needed */
 }
 </style>

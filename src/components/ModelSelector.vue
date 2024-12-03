@@ -1,7 +1,7 @@
 <template>
-    <div class="model-selector">
-        <label for="model-select">Select Model:</label>
-        <select v-model="localSelectedModel">
+    <div class="model-selector form-group mt-auto">
+        <label for="model-select" class="form-label">Select Model:</label>
+        <select v-model="localSelectedModel" class="form-select" id="model-select">
             <option v-for="model in availableModels" :key="model" :value="model">
                 {{ model }}
             </option>
@@ -66,7 +66,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 .model-selector {
     margin-top: auto;
 }
