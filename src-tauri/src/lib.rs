@@ -3,16 +3,19 @@ use std::env;
 use std::fs;
 use std::io::Write;
 
-mod get_chatgpt_response;
+mod app_type;
 mod config;
 mod database;
 mod generate_session_id;
 mod get_available_models;
 mod get_chat_history;
+mod get_chat_history_by_session;
+mod get_chatgpt_response;
 mod get_config;
 mod get_db_connection;
 mod get_default_model;
 mod get_openai_api_key;
+mod get_session_id_list;
 mod models;
 mod schema;
 mod set_openai_api_key;
@@ -21,10 +24,12 @@ use database::Database;
 use generate_session_id::generate_session_id;
 use get_available_models::get_available_models;
 use get_chat_history::get_chat_history;
+use get_chat_history_by_session::get_chat_history_by_session;
+use get_chatgpt_response::get_chatgpt_response;
 use get_default_model::get_default_model;
 use get_openai_api_key::get_openai_api_key;
+use get_session_id_list::get_session_id_list;
 use set_openai_api_key::set_openai_api_key;
-use get_chatgpt_response::get_chatgpt_response;
 
 fn shutdown(database: &Database) {
     database
@@ -69,7 +74,9 @@ pub fn run() {
             get_available_models,
             get_default_model,
             set_openai_api_key,
-            get_openai_api_key
+            get_openai_api_key,
+            get_chat_history_by_session,
+            get_session_id_list,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

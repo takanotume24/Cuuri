@@ -1,73 +1,75 @@
 <template>
     <aside id="chat-sessions" class="d-flex flex-column bg-light p-3">
-        <ul class="list-group list-group-flush flex-grow-1 overflow-auto mb-3">
-            <li v-for="(_, sessionId) in rawChats" :key="sessionId" 
-                :class="['list-group-item', 'cursor-pointer', { active: currentSessionId === sessionId }]"
-                @click="loadSession(sessionId)">
-                Chat Session: {{ sessionId }}
-            </li>
-        </ul>
-        <button class="btn btn-outline-secondary mb-3" @click="$emit('new-session')">New Session</button>
+        <NewSessionButton @new-session="createNewSession" />
         <ModelSelector v-if="isApiKeySet" :isApiKeySet="isApiKeySet" :selectedModel="selectedModel"
-            @update:selectedModel="handleModelChange" />
+            @update:selectedModel="handleModelChange" class="mb-3" />
+        <SessionList :sessionIdList="sessionIdList" :currentSessionId="localCurrentSessionId"
+            @select-session="selectSession" />
     </aside>
 </template>
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
 import ModelSelector from './ModelSelector.vue';
-import { ModelName, RawChats, SessionId } from '../types';
+import NewSessionButton from './NewSessionButton.vue';
+import SessionList from './SessionList.vue';
+import { ModelName, SessionId } from '../types';
+import { getSessionIdList } from '../getSessionIdList';
+import { generateSessionId } from '../generateSessionId';
 
 export default defineComponent({
-    components: { ModelSelector },
+    components: { ModelSelector, NewSessionButton, SessionList },
     props: {
-        rawChats: Object as () => RawChats,
         currentSessionId: {
             type: [String, null] as PropType<SessionId | null>,
-            default: null
+            default: null,
         },
         isApiKeySet: Boolean,
         selectedModel: {
             type: [String, null] as PropType<ModelName | null>,
-            default: null
+            default: null,
         },
     },
+    data() {
+        return {
+            localCurrentSessionId: null as SessionId | null,
+            sessionIdList: [] as SessionId[],
+        };
+    },
+    watch: {
+        currentSessionId(newVal: SessionId, _: SessionId) {
+            this.localCurrentSessionId = newVal;
+        },
+    },
+    async mounted() {
+        await this.fetchSessionIdList();
+    },
     methods: {
-        loadSession(sessionId: SessionId) {
-            this.$emit('session-changed', sessionId);
+        selectSession(sessionId: SessionId) {
+            this.localCurrentSessionId = sessionId;
+            this.$emit('update:currentSessionId', sessionId);
         },
         handleModelChange(newVal: ModelName) {
-            this.$emit('update:selectedModel', newVal)
-        }
-    }
+            this.$emit('update:selectedModel', newVal);
+        },
+        async fetchSessionIdList() {
+            try {
+                const sessionIdList = await getSessionIdList();
+                if (!sessionIdList) return;
+                this.sessionIdList = sessionIdList;
+            } catch (error) {
+                console.error('Failed to fetch session IDs:', error);
+            }
+        },
+        async createNewSession() {
+            const newSessionId = await generateSessionId();
+            if (!newSessionId) return;
+
+            this.sessionIdList.push(newSessionId);
+            this.$emit('update:currentSessionId', newSessionId);
+        },
+    },
 });
 </script>
 
-<style scoped>
-aside#chat-sessions {
-    width: 25%;
-    max-width: 300px;
-    min-width: 200px;
-}
-
-.list-group-item {
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.list-group-item.active {
-    background-color: #007bff;
-    color: #fff;
-    font-weight: bold;
-}
-
-.list-group-item:hover {
-    background-color: #e0e0e0; /* Change to a slightly darker shade for better contrast */
-    color: #333; /* Ensure text color remains readable */
-}
-
-.btn {
-    width: 100%;
-}
-</style>
-
+<style scoped></style>

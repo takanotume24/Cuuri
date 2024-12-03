@@ -66,8 +66,4 @@ export default {
 };
 </script>
 
-<style scoped>
-.model-selector {
-    margin-top: auto;
-}
-</style>
+<style scoped></style>

@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { SessionId, UserInput, ModelName, ApiKey, Markdown } from "./types";
+import { SessionId, UserInput, ModelName, ApiKey, ChatResponse } from "./types";
 import { EncodedImage } from "./types";
 
 export async function getChatGptResponse(
@@ -8,7 +8,7 @@ export async function getChatGptResponse(
   selectedModel: ModelName,
   apiKey: ApiKey,
   base64ImageList?: EncodedImage[]
-): Promise<Markdown | null> {
+): Promise<ChatResponse | null> {
   try {
     return await invoke("get_chatgpt_response", {
       inputSessionId: currentSessionId,

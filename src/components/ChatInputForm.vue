@@ -1,61 +1,39 @@
 <template>
   <form @submit.prevent="handleSubmit" class="input-form">
     <div class="form-group mb-3">
-      <textarea
-        v-model="input"
-        class="form-control"
-        placeholder="Ask ChatGPT..."
-        rows="4"
-        @keydown="checkCtrlEnter"
-      ></textarea>
+      <textarea v-model="input" class="form-control" placeholder="Ask ChatGPT..." rows="4"
+        @keydown="checkCtrlEnter"></textarea>
     </div>
     <div class="d-flex justify-content-between align-items-center">
-      <!-- Hidden default file input -->
-      <input
-        type="file"
-        @change="handleFileChange"
-        accept="image/*"
-        multiple
-        class="form-control-file"
-        ref="fileInput"
-        style="display: none"
-      />
-      <!-- Custom button for file selection -->
-      <button type="button" class="btn btn-secondary" @click="triggerFileInput">
-        Select Files
-      </button>
+      <FileSelector @files-selected="handleFilesSelected" />
       <button type="submit" class="btn btn-primary">Send</button>
-    </div>
-    <div v-if="fileNames.length" class="mt-2">
-      <strong>Selected files:</strong>
-      <ul>
-        <li v-for="fileName in fileNames" :key="fileName">{{ fileName }}</li>
-      </ul>
     </div>
   </form>
 </template>
 
-
 <script lang="ts">
-import { defineComponent, ref, PropType } from 'vue';
+import { defineComponent, PropType } from 'vue';
 import { convertFileToBase64 } from '../convertFileToBase64';
 import { EncodedImage } from '../types';
+import FileSelector from './FileSelector.vue';
 
 export default defineComponent({
+  components: { FileSelector },
   props: {
     onSubmit: Function as PropType<(input: string, base64Images?: EncodedImage[]) => void>,
   },
-  setup(props) {
-    const input = ref('');
-    const selectedFiles = ref<File[]>([]);
-    const fileNames = ref<string[]>([]);
-    const fileInput = ref<HTMLInputElement | null>(null);
-
-    const handleSubmit = async () => {
-      if (props.onSubmit && input.value.trim() !== '') {
+  data() {
+    return {
+      input: '',
+      selectedFiles: [] as File[],
+    };
+  },
+  methods: {
+    async handleSubmit() {
+      if (this.onSubmit && this.input.trim() !== '') {
         const base64Images: EncodedImage[] = [];
 
-        for (const file of selectedFiles.value) {
+        for (const file of this.selectedFiles) {
           try {
             const base64Image = await convertFileToBase64(file);
             base64Images.push(base64Image);
@@ -63,78 +41,24 @@ export default defineComponent({
             console.error(`Error converting file ${file.name}:`, error);
           }
         }
-        props.onSubmit(input.value, base64Images);
-        input.value = '';
-        selectedFiles.value = [];
-        fileNames.value = [];
+        this.onSubmit(this.input, base64Images);
+        this.input = '';
+        this.selectedFiles = [];
       }
-    };
-
-    const checkCtrlEnter = (event: KeyboardEvent) => {
+    },
+    checkCtrlEnter(event: KeyboardEvent) {
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-        handleSubmit();
+        this.handleSubmit();
       }
-    };
+    },
+    handleFilesSelected(files: File[]) {
+      this.selectedFiles = files;
+    },
+  },
+  mounted() {
 
-    const handleFileChange = (event: Event) => {
-      const target = event.target as HTMLInputElement;
-      if (target.files) {
-        selectedFiles.value = Array.from(target.files);
-        fileNames.value = selectedFiles.value.map(file => file.name);
-      }
-    };
-
-    const triggerFileInput = () => {
-      fileInput.value?.click();
-    };
-
-    return {
-      input,
-      fileNames,
-      handleSubmit,
-      checkCtrlEnter,
-      handleFileChange,
-      triggerFileInput,
-      fileInput,
-    };
   },
 });
 </script>
 
-
-<style scoped>
-.input-form {
-  background-color: #f8f9fa;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.form-control {
-  resize: none;
-}
-
-.d-flex {
-  margin-top: 10px;
-}
-
-.mt-2 {
-  margin-top: 10px;
-}
-
-.btn-secondary {
-  margin-right: 10px;
-  /* Additional custom styles for the button can go here */
-  background-color: #6c757d;
-  color: #ffffff;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.btn-secondary:hover {
-  background-color: #5a6268;
-}
-</style>
+<style scoped></style>
