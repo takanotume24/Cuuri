@@ -6,7 +6,7 @@ export function getRawChatsFromDatabaseChatEntries(
   let rawChats: RawChats = {};
   for (const databaseChatEntry of databaseChatEntries) {
     if (!rawChats[databaseChatEntry.session_id]) {
-      rawChats[databaseChatEntry.session_id] = [];
+      rawChats[databaseChatEntry.session_id]= []
     }
     const rawChatEntry: RawChatEntry = {
       question: databaseChatEntry.question,

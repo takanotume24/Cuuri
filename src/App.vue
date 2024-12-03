@@ -1,15 +1,13 @@
 <template>
   <div id="app">
-    <aside id="chat-sessions">
-      <ul>
-        <li v-for="(_, sessionId) in rawChats" :key="sessionId" :class="{ active: currentSessionId === sessionId }"
-          @click="loadSession(sessionId)">
-          Chat Session {{ sessionId }}
-        </li>
-      </ul>
-      <button @click="createNewSession">New Session</button>
-      <ModelSelector v-if="isApiKeySet" :isApiKeySet="isApiKeySet" v-model:selectedModel="selectedModel" />
-    </aside>
+    <ChatSessions 
+      :rawChats="rawChats" 
+      :currentSessionId="currentSessionId" 
+      :isApiKeySet="isApiKeySet" 
+      v-model:selectedModel="selectedModel" 
+      @new-session="createNewSession" 
+      @session-changed="loadSession"
+    />
     <main>
       <ApiKeyDialog v-if="showDialog" @api-key-set="onApiKeySaved" />
       <header>
@@ -25,7 +23,7 @@
         <div>
           <form @submit.prevent="handleSubmit" class="input-form">
             <textarea v-model="input" placeholder="Ask ChatGPT..." rows="4" cols="50"
-              @keydown="checkCtrlEnter"></textarea>
+                      @keydown="checkCtrlEnter"></textarea>
             <button type="submit">Send</button>
           </form>
         </div>
@@ -37,11 +35,11 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import ApiKeyDialog from './components/ApiKeyDialog.vue';
+import ChatSessions from './components/ChatSessions.vue';
 import { getApiKey } from './getApiKey';
 import { getChatHistory } from './getChatHistory';
 import { getChatGptResponse } from './getChatGptResponse';
 import { generateSessionId } from './generateSessionId';
-import ModelSelector from './components/ModelSelector.vue';
 import { renderMarkdown } from './renderMarkdown';
 import { getRawChatsFromDatabaseChatEntries } from './getRawChatsFromDatabaseChatEntries';
 import { SessionId, UserInput, ModelName, ApiKey, HtmlChatEntry, RawChats } from './types';
@@ -58,7 +56,7 @@ interface ComponentData {
 
 export default defineComponent({
   components: {
-    ModelSelector,
+    ChatSessions,
     ApiKeyDialog,
   },
   data(): ComponentData {
@@ -100,8 +98,6 @@ export default defineComponent({
       }
     }
   },
-
-  watch: {},
 
   methods: {
     async handleSubmit() {
@@ -197,58 +193,6 @@ export default defineComponent({
   width: 100%;
   height: 100vh;
   font-family: Arial, sans-serif;
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-aside#chat-sessions {
-  width: 25%;
-  background-color: #f0f0f0;
-  padding: 10px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-}
-
-#chat-sessions ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  flex-grow: 1;
-  overflow-y: auto;
-}
-
-#chat-sessions li {
-  padding: 10px;
-  cursor: pointer;
-  border-bottom: 1px solid #ccc;
-}
-
-#chat-sessions li.active {
-  background-color: #dcdcdc;
-  font-weight: bold;
-}
-
-#chat-sessions button {
-  margin-top: 10px;
-  padding: 10px;
-  border: none;
-  background-color: #e0e0e0;
-  cursor: pointer;
-}
-
-#chat-sessions button:hover {
-  background-color: #d0d0d0;
 }
 
 main {

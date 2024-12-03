@@ -13,7 +13,7 @@ export interface DatabaseChatEntry {
   session_id: SessionId;
   question: UserInput;
   answer: Markdown;
-  created_at: ApiKey;
+  created_at: string;
 }
 
 export interface RawChatEntry {
