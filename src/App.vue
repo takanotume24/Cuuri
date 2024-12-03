@@ -16,7 +16,7 @@
 import { defineComponent } from 'vue';
 import ApiKeyDialog from './components/ApiKeyDialog.vue';
 import ChatSessions from './components/ChatSessions.vue';
-import ChatHistory from './components/ChatHistory.vue';
+import ChatHistory from './components/ChatHIstory.vue';
 import ChatInputForm from './components/ChatInputForm.vue';
 import { getApiKey } from './getApiKey';
 import { getChatHistory } from './getChatHistory';
