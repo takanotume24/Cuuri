@@ -3,6 +3,26 @@
 version = 3
 
 [[package]]
+name = "Cuuri"
+version = "0.2.0"
+dependencies = [
+ "chrono",
+ "diesel",
+ "dirs",
+ "r2d2",
+ "reqwest",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-shell",
+ "tokio",
+ "toml 0.8.19",
+ "uuid",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -537,26 +557,6 @@ checksum = "edb49164822f3ee45b17acd4a208cfc1251410cf0cad9a833234c9890774dd9f"
 dependencies = [
  "quote",
  "syn 2.0.87",
-]
-
-[[package]]
-name = "cuuri"
-version = "0.1.1"
-dependencies = [
- "chrono",
- "diesel",
- "dirs",
- "r2d2",
- "reqwest",
- "rusqlite",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-shell",
- "tokio",
- "toml 0.8.19",
- "uuid",
 ]
 
 [[package]]
