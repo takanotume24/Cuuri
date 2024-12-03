@@ -1,7 +1,7 @@
 <template>
     <div class="model-selector">
         <label for="model-select">Select Model:</label>
-        <select v-model="internalSelectedModel" @change="updateValue">
+        <select v-model="localSelectedModel">
             <option v-for="model in availableModels" :key="model" :value="model">
                 {{ model }}
             </option>
@@ -18,57 +18,46 @@ export default {
     props: {
         selectedModel: {
             type: String,
-            default: '',
-        },
-        isApiKeySet: {
-            type: Boolean,
-            required: true,
+            default: null,
         },
     },
     data() {
         return {
             availableModels: [] as string[],
-            internalSelectedModel: this.selectedModel
         };
+    },
+    computed: {
+        localSelectedModel: {
+            get() {
+                return this.selectedModel;
+            },
+            set(value: string) {
+                this.$emit('update:selectedModel', value);
+            }
+        }
+    },
+    async created() {
+        const defaultModel = await getDefaultModel();
+        if (!this.selectedModel && defaultModel) {
+            this.$emit('update:selectedModel', defaultModel);
+        }
     },
     async mounted() {
         await this.fetchAvailableModels();
     },
-    watch: {
-        isApiKeySet(v: boolean) {
-            if (v) {
-                this.fetchAvailableModels();
-            }
-        },
-        selectedModel(newVal: string) {
-            this.internalSelectedModel = newVal;
-        },
-    },
     methods: {
-        updateValue(event: Event) {
-            const target = event.target as HTMLSelectElement;
-            this.$emit('update:selectedModel', target.value);
-        },
         async fetchAvailableModels() {
             const apiKey = await getApiKey();
-            if (!apiKey) {
-                return;
-            }
+            if (!apiKey) return;
 
             const models = await getAvailableModels(apiKey);
-            if (!models) {
-                return;
-            }
+            if (!models) return;
 
             this.availableModels = models;
-            if (models.length > 0) {
-                const defaultModel = await getDefaultModel();
-                if (!defaultModel) {
-                    this.$emit('update:selectedModel', '');
-                    return;
-                }
-                this.internalSelectedModel = models.includes(defaultModel) ? defaultModel : '';
-                this.$emit('update:selectedModel', this.internalSelectedModel);
+
+            const defaultModel = await getDefaultModel();
+            if (defaultModel && models.includes(defaultModel)) {
+                this.$emit('update:selectedModel', defaultModel);
             }
         },
     },

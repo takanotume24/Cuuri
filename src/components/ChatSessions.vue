@@ -7,14 +7,15 @@
             </li>
         </ul>
         <button @click="$emit('new-session')">New Session</button>
-        <ModelSelector v-if="isApiKeySet" :isApiKeySet="isApiKeySet" v-model:selectedModel="selectedModel" />
+        <ModelSelector v-if="isApiKeySet" :isApiKeySet="isApiKeySet" :selectedModel="selectedModel"
+            @update:selectedModel="handleModelChange" />
     </aside>
 </template>
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
 import ModelSelector from './ModelSelector.vue';
-import { RawChats, SessionId } from '../types';
+import { ModelName, RawChats, SessionId } from '../types';
 
 export default defineComponent({
     components: { ModelSelector },
@@ -25,11 +26,17 @@ export default defineComponent({
             default: null
         },
         isApiKeySet: Boolean,
-        selectedModel: String,
+        selectedModel: {
+            type: [String, null] as PropType<ModelName | null>,
+            default: null
+        },
     },
     methods: {
         loadSession(sessionId: SessionId) {
             this.$emit('session-changed', sessionId);
+        },
+        handleModelChange(newVal: ModelName) {
+            this.$emit('update:selectedModel', newVal)
         }
     }
 });
