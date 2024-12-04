@@ -17,21 +17,30 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue';
+import { defineComponent, ref, watch } from 'vue';
 
 export default defineComponent({
-    emits: ['files-selected'],
-    setup(_, { emit }) {
-        const selectedFiles = ref<File[]>([]);
+    props: {
+        modelValue: {
+            type: Array as () => File[],
+            default: () => []
+        }
+    },
+    emits: ['update:modelValue'],
+    setup(props, { emit }) {
         const fileNames = ref<string[]>([]);
         const fileInput = ref<HTMLInputElement | null>(null);
+
+        // Watch for changes in modelValue and update fileNames
+        watch(() => props.modelValue, (newFiles) => {
+            fileNames.value = newFiles.map(file => file.name);
+        }, { immediate: true });
 
         const handleFileChange = (event: Event) => {
             const target = event.target as HTMLInputElement;
             if (target.files) {
-                selectedFiles.value = Array.from(target.files);
-                fileNames.value = selectedFiles.value.map(file => file.name);
-                emit('files-selected', selectedFiles.value);
+                const files = Array.from(target.files);
+                emit('update:modelValue', files);
             }
         };
 
@@ -48,5 +57,6 @@ export default defineComponent({
     },
 });
 </script>
+
 
 <style scoped></style>

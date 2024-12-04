@@ -5,7 +5,7 @@
         @keydown="checkCtrlEnter"></textarea>
     </div>
     <div class="d-flex justify-content-between align-items-center">
-      <FileSelector @files-selected="handleFilesSelected" />
+      <FileSelector v-model="selectedFiles"/>
       <button type="submit" class="btn btn-primary">Send</button>
     </div>
   </form>
@@ -50,9 +50,6 @@ export default defineComponent({
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
         this.handleSubmit();
       }
-    },
-    handleFilesSelected(files: File[]) {
-      this.selectedFiles = files;
     },
   },
   mounted() {
