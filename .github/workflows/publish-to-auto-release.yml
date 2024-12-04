@@ -27,7 +27,7 @@ jobs:
       - name: setup node
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version-file: ".nvmrc"
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -72,20 +72,13 @@ jobs:
       - name: Update version number
         run: ./script/update_version.sh $VERSION
 
-      - name: Set up Git
+      - name: Push changes
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Commit changes
-        run: |
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "Automated commit from GitHub Actions"
-
-      - name: Push changes
-        uses: ad-m/github-push-action@v0.8.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          git commit -m "Update version number from GitHub Actions"
+          git push
 
   publish-tauri:
     needs: update-version
@@ -111,7 +104,7 @@ jobs:
       - name: setup node
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version-file: ".nvmrc"
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -127,7 +120,7 @@ jobs:
 
       - name: install frontend dependencies
         run: npm install # change this to npm, pnpm or bun depending on which one you use.
-      
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
