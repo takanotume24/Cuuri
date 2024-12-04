@@ -6,6 +6,7 @@ on:
 
 jobs:
   cleanup:
+    if: ${{ !(github.event.pull_request.base.ref == 'master' && github.event.pull_request.head.ref == 'develop') }}
     runs-on: ubuntu-latest
     steps:
       - name: Cleanup
