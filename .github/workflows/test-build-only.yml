@@ -3,7 +3,7 @@ name: "build"
 on:
   push:
     branches-ignore:
-      - release
+      - main
   pull_request:
     
 jobs:
