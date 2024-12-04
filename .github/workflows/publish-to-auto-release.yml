@@ -58,22 +58,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Extract version from branch name
-        id: extract_version
-        run: |
+      - run: |
           VERSION=${GITHUB_REF#refs/heads/release/}
           if [[ -z "$VERSION" ]]; then
             echo "Error: Version could not be extracted from the branch name."
             exit 1
           fi
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-
-      - name: Update version number
-        run: ./script/update_version.sh $VERSION
-
-      - name: Push changes
-        run: |
+          ./script/update_version.sh $VERSION
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .
