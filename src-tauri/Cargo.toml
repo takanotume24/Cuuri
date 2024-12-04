@@ -1,6 +1,6 @@
 [package]
 name = "Cuuri"
-version = "0.2.0"
+version = "0.2.1"
 description = "Cuuri is a GUI client for ChatGPT built with Tauri, Vue, and TypeScript. "
 authors = ["takanotume24 <takanotume24@gmail.com>"]
 edition = "2021"
@@ -23,9 +23,9 @@ tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 reqwest = { version = "0.12.9", features = ["json"] }
-tokio = "1.41.1"
+tokio = "1.42.0"
 uuid = { version = "1.11.0", features = ["v4"] }
-diesel = { version = "2.2.5", features = ["sqlite", "r2d2", "chrono"] }
+diesel = { version = "2.2.6", features = ["sqlite", "r2d2", "chrono"] }
 r2d2 = "0.8.10"
 chrono = { version = "0.4.38", features = ["serde"] }
 dirs = "5.0.1"
