@@ -53,26 +53,8 @@ jobs:
         with:
           args: ${{ matrix.args }}
 
-  update-version:
-    needs: test-tauri
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: |
-          VERSION=${GITHUB_REF#refs/heads/release/}
-          if [[ -z "$VERSION" ]]; then
-            echo "Error: Version could not be extracted from the branch name."
-            exit 1
-          fi
-          ./script/update_version.sh $VERSION
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .
-          git commit -m "Update version number from GitHub Actions"
-          git push
-
   publish-tauri:
-    needs: update-version
+    needs: test-tauri
     permissions:
       contents: write
     strategy:
