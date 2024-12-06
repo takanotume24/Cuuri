@@ -1,14 +1,11 @@
 use crate::app_type::ChatResponse;
-use crate::database::Database;
-use crate::get_db_connection::get_db_connection;
+use crate::establish_connection::establish_connection;
+use crate::get_database_path::get_database_path;
 use crate::models::{ChatHistory, NewChatHistory};
-use crate::schema::chat_history::dsl::*;
+use crate::schema::chat_histories::dsl::*;
 use chrono::Utc;
 use diesel::prelude::*;
-
 use serde_json::json;
-use tauri::State;
-// Define a struct to hold both the response and the timestamp
 
 #[tauri::command]
 pub async fn get_chatgpt_response(
@@ -17,12 +14,11 @@ pub async fn get_chatgpt_response(
     base64_images: Option<Vec<String>>,
     model: String,
     api_key: String,
-    db: State<'_, Database>,
 ) -> Result<ChatResponse, String> {
-    // Change return type here
-    let mut conn = get_db_connection(&db)?;
+    let database_path = get_database_path();
+    let mut conn = establish_connection(&database_path);
 
-    let session_history = chat_history
+    let session_history = chat_histories
         .filter(session_id.eq(&input_session_id))
         .order(created_at.asc())
         .load::<ChatHistory>(&mut conn)
@@ -90,17 +86,18 @@ pub async fn get_chatgpt_response(
 
     let response = json["choices"][0]["message"]["content"]
         .as_str()
-        .ok_or_else(|| "No response from API".to_string())?;
+        .ok_or_else(|| "No response from API".to_string())?
+        .to_string();
 
     let now = Utc::now().naive_utc();
     let new_chat = NewChatHistory {
         session_id: &input_session_id,
         question: &message,
-        answer: response,
+        answer: &response,
         created_at: now,
     };
 
-    diesel::insert_into(chat_history)
+    diesel::insert_into(chat_histories)
         .values(&new_chat)
         .execute(&mut conn)
         .map_err(|e| e.to_string())?;

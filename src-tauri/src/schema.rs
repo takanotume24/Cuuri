@@ -1,5 +1,7 @@
+// @generated automatically by Diesel CLI.
+
 diesel::table! {
-    chat_history (id) {
+    chat_histories (id) {
         id -> Integer,
         session_id -> Text,
         question -> Text,
