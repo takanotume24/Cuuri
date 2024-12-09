@@ -32,7 +32,13 @@ Cuuri is a GUI client for ChatGPT built with Tauri, Vue, and TypeScript.
 1. Clone this repository.
     ```
     $ https://github.com/takanotume24/Cuuri.git
+    $ cd Cuuri
     ```
+1. Install npm dependencies.
+    ```
+    $ npm install
+    ```
+  
 1. Build the project.
     ```
     $ npm run tauri build
