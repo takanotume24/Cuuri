@@ -1,6 +1,6 @@
 [package]
 name = "Cuuri"
-version = "0.2.1"
+version = "0.2.2"
 description = "Cuuri is a GUI client for ChatGPT built with Tauri, Vue, and TypeScript. "
 authors = ["takanotume24 <takanotume24@gmail.com>"]
 edition = "2021"
