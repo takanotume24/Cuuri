@@ -3,6 +3,11 @@ use std::fs;
 
 #[tauri::command]
 pub async fn set_openai_api_key(api_key: String) -> Result<(), String> {
+    // Return an error if the API key is empty
+    if api_key.is_empty() {
+        return Err("API key cannot be empty".to_string());
+    }
+
     let mut config_path = dirs::home_dir().expect("Failed to get home directory");
     config_path.push(".cuuri/config.toml");
 
