@@ -9,8 +9,8 @@
                     <label for="apiKeyInput">API Key</label>
                     <input id="apiKeyInput" v-model="apiKeyInput" class="form-control" :placeholder="placeholderText" />
                 </div>
-                <div class="d-flex justify-content-between mt-3">
-                    <button @click="saveApiKey" class="btn btn-primary">Save API Key</button>
+                <div class="d-flex justify-content-end mt-3">
+                    <button @click="saveApiKey" class="btn btn-primary me-2">Save API Key</button>
                     <button @click="backToHomeView" class="btn btn-secondary">Close</button>
                 </div>
                 <p v-if="message" class="mt-3 alert"
@@ -21,7 +21,6 @@
         </div>
     </div>
 </template>
-
 
 <script lang="ts">
 import { invoke } from '@tauri-apps/api/core';
