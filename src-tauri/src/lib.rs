@@ -35,8 +35,8 @@ use std::env;
 pub fn run() {
     init_config_file();
 
-    let database_url = get_database_path();
-    let mut connection: diesel::SqliteConnection = establish_connection(&database_url);
+    let database_path: String = get_database_path().unwrap();
+    let mut connection: diesel::SqliteConnection = establish_connection(&database_path);
     run_migrations(&mut connection);
 
     tauri::Builder::default()
