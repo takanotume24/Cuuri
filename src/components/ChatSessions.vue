@@ -37,12 +37,15 @@ export default defineComponent({
         };
     },
     watch: {
-        currentSessionId(newVal: SessionId, _: SessionId) {
+        async currentSessionId(newVal: SessionId, _: SessionId) {
             this.localCurrentSessionId = newVal;
         },
     },
     async mounted() {
         await this.fetchSessionIdList();
+        if (this.localCurrentSessionId == null && this.sessionIdList.length == 0) {
+            await this.createNewSession();
+        }
     },
     methods: {
         selectSession(sessionId: SessionId) {

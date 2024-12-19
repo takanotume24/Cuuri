@@ -33,11 +33,31 @@ use set_openai_api_key::set_openai_api_key;
 use std::env;
 
 pub fn run() {
-    init_config_file();
+    if let Err(e) = init_config_file() {
+        eprintln!("Failed to initialize config file: {}", e);
+        return;
+    }
 
-    let database_url = get_database_path();
-    let mut connection: diesel::SqliteConnection = establish_connection(&database_url);
-    run_migrations(&mut connection);
+    let database_path = match get_database_path() {
+        Ok(path) => path,
+        Err(e) => {
+            eprintln!("Failed to get database path: {}", e);
+            return;
+        }
+    };
+
+    let mut connection = match establish_connection(&database_path) {
+        Ok(conn) => conn,
+        Err(e) => {
+            eprintln!("Failed to establish connection: {}", e);
+            return;
+        }
+    };
+
+    if let Err(e) = run_migrations(&mut connection) {
+        eprintln!("Failed to run migrations: {}", e);
+        return;
+    }
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
