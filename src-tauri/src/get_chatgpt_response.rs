@@ -16,7 +16,7 @@ pub async fn get_chatgpt_response(
     api_key: String,
 ) -> Result<ChatResponse, String> {
     let database_path = get_database_path().map_err(|e| e.to_string())?;
-    let mut conn = establish_connection(&database_path);
+    let mut conn = establish_connection(&database_path).map_err(|e| e.to_string())?;
 
     let session_history = chat_histories
         .filter(session_id.eq(&input_session_id))

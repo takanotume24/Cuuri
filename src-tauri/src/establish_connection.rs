@@ -1,6 +1,6 @@
 use diesel::prelude::*;
+use std::result::Result;
 
-pub fn establish_connection(database_path: &String) -> SqliteConnection {
-    SqliteConnection::establish(&database_path)
-        .unwrap_or_else(|_| panic!("Error connecting to {}", database_path))
+pub fn establish_connection(database_path: &str) -> Result<SqliteConnection, diesel::ConnectionError> {
+    SqliteConnection::establish(database_path)
 }

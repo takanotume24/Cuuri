@@ -11,7 +11,7 @@ pub fn get_chat_history() -> Result<Vec<RawDatabaseChatEntry>, String> {
     // Use block_on to run the async code synchronously
     block_on(async {
         let database_path = get_database_path().map_err(|e| e.to_string())?;
-        let mut conn = establish_connection(&database_path);
+        let mut conn = establish_connection(&database_path).map_err(|e| e.to_string())?;
 
         // Pass the mutable reference to Diesel operations
         let results = chat_histories
