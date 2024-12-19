@@ -13,7 +13,6 @@ pub fn init_config_file() -> Result<(), io::Error> {
         let mut file = fs::File::create(&config_path)?;
         writeln!(file, "openai_api_key = \"\"")?;
         writeln!(file, "default_model = \"gpt-3.5-turbo\"")?;
-
         println!("Configuration file created at {:?}", config_path);
     }
 
