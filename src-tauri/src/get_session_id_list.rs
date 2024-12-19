@@ -8,7 +8,7 @@ use tauri::async_runtime::block_on;
 #[tauri::command]
 pub fn get_session_id_list() -> Result<Vec<SessionId>, String> {
     block_on(async {
-        let database_path = get_database_path();
+        let database_path = get_database_path().map_err(|e| e.to_string())?;
         let mut conn = establish_connection(&database_path);
 
         let results = chat_histories
