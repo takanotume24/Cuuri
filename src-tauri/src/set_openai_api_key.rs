@@ -1,6 +1,5 @@
 use crate::config::Config;
 use std::fs;
-use std::path::PathBuf;
 
 #[tauri::command]
 pub async fn set_openai_api_key(api_key: String) -> Result<(), String> {
@@ -13,7 +12,7 @@ pub async fn set_openai_api_key(api_key: String) -> Result<(), String> {
     let home_dir = dirs::home_dir()
         .ok_or_else(|| "Failed to get home directory".to_string())?;
 
-    let mut config_path = PathBuf::from(home_dir);
+    let mut config_path = home_dir;
     config_path.push(".cuuri/config.toml");
 
     // Attempt to load the configuration from the file
