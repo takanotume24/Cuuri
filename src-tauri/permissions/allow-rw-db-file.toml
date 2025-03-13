@@ -1,0 +1,14 @@
+[[permission]]
+identifier = "allow-rw-db-file"
+description = ""
+
+commands.allow = [
+  "get_chatgpt_response",
+  "get_chat_history",
+  "get_chat_history_by_session",
+  "get_session_id_list",
+  "stream_chatgpt_response"
+]
+
+[[scope.allow]]
+path = "$HOME/.cuuri/chat.db"
