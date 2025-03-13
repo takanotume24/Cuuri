@@ -1,0 +1,11 @@
+[[permission]]
+identifier = "allow-generate-session-id"
+description = ""
+
+[permission.commands]
+allow = [
+  "generate_session_id",
+]
+
+[[scope.allow]]
+

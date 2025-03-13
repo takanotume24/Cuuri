@@ -16,6 +16,7 @@ mod models;
 mod run_migrations;
 mod schema;
 mod set_openai_api_key;
+mod stream_chatgpt_response;
 
 use establish_connection::establish_connection;
 use generate_session_id::generate_session_id;
@@ -31,6 +32,7 @@ use init_config_file::init_config_file;
 use run_migrations::run_migrations;
 use set_openai_api_key::set_openai_api_key;
 use std::env;
+use stream_chatgpt_response::stream_chatgpt_response;
 
 pub fn run() {
     if let Err(e) = init_config_file() {
@@ -70,6 +72,7 @@ pub fn run() {
             get_openai_api_key,
             get_chat_history_by_session,
             get_session_id_list,
+            stream_chatgpt_response,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
