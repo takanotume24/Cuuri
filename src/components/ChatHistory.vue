@@ -1,6 +1,6 @@
 <template>
     <div id="chat-history" class="overflow-auto border-bottom mb-3 pr-3">
-        <!-- 過去の履歴(ユーザの質問 + GPTの回答) -->
+        <!-- Past history (User's questions + GPT's answers) -->
         <div v-for="(entry, index) in sortedChatHistory" :key="index" class="chat-entry mb-3">
             <div class="user-message mb-1">
                 <strong>You:</strong>
@@ -9,16 +9,16 @@
             <div class="gpt-response bg-secondary text-white p-2 rounded" v-html="entry.answer"></div>
         </div>
 
-        <!-- ストリーミング中の回答を一時表示 -->
+        <!-- Temporary display of the ongoing (streaming) answer -->
         <div v-if="streamingAnswer.trim() !== ''" class="chat-entry mb-3">
-            <!-- ★ ユーザーの質問を先頭に表示 -->
+            <!-- Display the user's question at the top -->
             <div class="user-message mb-1">
                 <strong>You:</strong>
                 <pre class="bg-light p-2 rounded">{{ lastUserQuestion }}</pre>
             </div>
 
             <div class="gpt-response bg-secondary text-white p-2 rounded">
-                <!-- Markdown レンダリング後のHTMLを v-html で差し込む -->
+                <!-- Insert Markdown-rendered HTML via v-html -->
                 <div v-html="partialAnswerHtml"></div>
             </div>
         </div>
@@ -26,16 +26,12 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from 'vue';
-import { SessionId } from '../types';
-import { DatabaseChatEntry } from '../types';
-import { Markdown } from '../types';
+import { defineComponent, PropType, ref, computed, watch } from 'vue';
 import dayjs from 'dayjs';
 
-// DBから履歴を取得する関数
+// Import types and utilities
+import { SessionId, DatabaseChatEntry, Markdown } from '../types';
 import { getDatabaseChatEntryBySession } from '../getDatabaseChatEntryBySession';
-
-// marked 等を使ったMarkdownレンダリング関数
 import { renderMarkdown } from '../renderMarkdown';
 
 export default defineComponent({
@@ -46,59 +42,87 @@ export default defineComponent({
             default: null
         },
         lastAnswerReceivedTime: {
-            type: [Object, null] as PropType<dayjs.Dayjs | null>,
+            type: Object as () => dayjs.Dayjs | null,
             default: null
         },
-        // ストリーミング中のテキスト
         streamingAnswer: {
             type: String,
             default: ''
         },
-        // ★ 新たに追加: 「最後に送信されたユーザー質問」を受け取る
         lastUserQuestion: {
             type: String,
             default: ''
         }
     },
-    data() {
-        return {
-            databaseChatEntryBySession: [] as DatabaseChatEntry[]
-        };
-    },
-    watch: {
-        // セッションIDが変わったときに履歴を更新
-        async currentSessionId(newVal: SessionId) {
-            this.updateChatHistory(newVal);
-        },
-        // 新しい回答を受信したタイミングで履歴を再取得
-        lastAnswerReceivedTime() {
-            if (!this.currentSessionId) return;
-            this.updateChatHistory(this.currentSessionId);
-        }
-    },
-    computed: {
-        sortedChatHistory() {
-            if (!this.databaseChatEntryBySession) return [];
-            return this.databaseChatEntryBySession.slice().sort((a, b) => {
-                return a.created_at.diff(b.created_at);
-            });
-        },
-        // ストリーミング中のテキストをHTML化して返す
-        partialAnswerHtml(): string {
-            if (!this.streamingAnswer.trim()) return '';
-            return renderMarkdown(this.streamingAnswer as Markdown);
-        }
-    },
-    methods: {
-        async updateChatHistory(sessionId: SessionId) {
+    setup(props) {
+        // ----------------------------------
+        // State definitions (ref)
+        // ----------------------------------
+        const databaseChatEntryBySession = ref<DatabaseChatEntry[]>([]);
+
+        // ----------------------------------
+        // Side effects (watch)
+        // ----------------------------------
+        // When the session ID changes, re-fetch history from the DB
+        watch(
+            () => props.currentSessionId,
+            async (newVal) => {
+                if (newVal) {
+                    await updateChatHistory(newVal);
+                }
+            }
+        );
+
+        // Also re-fetch history when a new answer is received
+        watch(
+            () => props.lastAnswerReceivedTime,
+            async () => {
+                if (props.currentSessionId) {
+                    await updateChatHistory(props.currentSessionId);
+                }
+            }
+        );
+
+        // ----------------------------------
+        // Computed properties
+        // ----------------------------------
+        const sortedChatHistory = computed(() => {
+            // Sort received history by created_at in ascending order
+            if (!databaseChatEntryBySession.value) return [];
+            return [...databaseChatEntryBySession.value].sort((a, b) =>
+                a.created_at.diff(b.created_at)
+            );
+        });
+
+        // Convert the streaming text to HTML
+        const partialAnswerHtml = computed(() => {
+            if (!props.streamingAnswer.trim()) return '';
+            return renderMarkdown(props.streamingAnswer as Markdown);
+        });
+
+        // ----------------------------------
+        // Methods
+        // ----------------------------------
+        async function updateChatHistory(sessionId: SessionId) {
             const dbEntries = await getDatabaseChatEntryBySession(sessionId);
-            if (!dbEntries) return;
-            this.databaseChatEntryBySession = dbEntries;
+            if (dbEntries) {
+                databaseChatEntryBySession.value = dbEntries;
+            }
         }
+
+        // ----------------------------------
+        // Expose to template
+        // ----------------------------------
+        return {
+            // State
+            databaseChatEntryBySession,
+
+            // Computed
+            sortedChatHistory,
+            partialAnswerHtml
+        };
     }
 });
 </script>
 
-<style scoped>
-/* 必要に応じてスタイルを追加 */
-</style>
+<style scoped></style>

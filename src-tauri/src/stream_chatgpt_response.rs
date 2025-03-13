@@ -6,53 +6,43 @@ use crate::schema::chat_histories::dsl::*;
 use chrono::Utc;
 use diesel::prelude::*;
 use serde_json::json;
-use tauri::{Emitter, Window}; // Emitter をインポート
+use tauri::{Emitter, Window};
 
-#[tauri::command]
-pub async fn stream_chatgpt_response(
-    window: Window,
-    input_session_id: String,
-    message: String,
-    base64_images: Option<Vec<String>>,
-    model: String,
-    api_key: String,
-) -> Result<ChatResponse, String> {
-    // 1) DB から過去のチャット履歴を取得
-    let database_path = get_database_path().map_err(|e| e.to_string())?;
-    let mut conn = establish_connection(&database_path).map_err(|e| e.to_string())?;
-
-    let session_history = chat_histories
-        .filter(session_id.eq(&input_session_id))
+fn fetch_session_history(
+    conn: &mut SqliteConnection,
+    input_session_id: &String,
+) -> Result<Vec<ChatHistory>, String> {
+    chat_histories
+        .filter(session_id.eq(input_session_id))
         .order(created_at.asc())
-        .load::<ChatHistory>(&mut conn)
-        .map_err(|e| e.to_string())?;
+        .load::<ChatHistory>(conn)
+        .map_err(|e| e.to_string())
+}
 
-    // 2) これまでの会話履歴を API 用に組み立て
-    let mut messages: Vec<serde_json::Value> = session_history
+fn build_messages_from_history(session_history: &[ChatHistory]) -> Vec<serde_json::Value> {
+    session_history
         .iter()
         .flat_map(|entry| {
             vec![
                 json!({
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": entry.question.clone()}
+                        { "type": "text", "text": entry.question.clone() }
                     ]
                 }),
                 json!({
                     "role": "assistant",
                     "content": [
-                        {"type": "text", "text": entry.answer.clone()}
+                        { "type": "text", "text": entry.answer.clone() }
                     ]
                 }),
             ]
         })
-        .collect();
+        .collect()
+}
 
-    // 画像を含める場合の処理
-    let mut user_content = vec![json!({
-        "type": "text",
-        "text": message.clone()
-    })];
+fn build_user_message(message: &String, base64_images: Option<Vec<String>>) -> serde_json::Value {
+    let mut user_content = vec![json!({ "type": "text", "text": message })];
     if let Some(images) = base64_images {
         for image_data in images {
             user_content.push(json!({
@@ -63,86 +53,120 @@ pub async fn stream_chatgpt_response(
             }));
         }
     }
+    json!({ "role": "user", "content": user_content })
+}
 
-    // 今回のユーザ入力を追加
-    messages.push(json!({
-        "role": "user",
-        "content": user_content
-    }));
-
-    // 3) API リクエストボディ: stream: true を付ける
-    let request_body = json!({
+fn build_request_body(model: &String, messages: Vec<serde_json::Value>) -> serde_json::Value {
+    json!({
         "model": model,
         "messages": messages,
         "stream": true
-    });
+    })
+}
 
-    // 4) OpenAI ChatCompletion にリクエスト (ストリーミング)
+async fn fetch_streaming_response(
+    request_body: &serde_json::Value,
+    api_key: &String,
+) -> Result<reqwest::Response, String> {
     let client = reqwest::Client::new();
-    let mut res = client
+    client
         .post("https://api.openai.com/v1/chat/completions")
         .header("Authorization", format!("Bearer {}", api_key))
-        .json(&request_body)
+        .json(request_body)
         .send()
         .await
-        .map_err(|e| format!("Failed to send request: {}", e))?;
+        .map_err(|e| format!("Failed to send request: {}", e))
+}
 
-    // 結果を蓄積する変数
+async fn process_stream_response(
+    mut res: reqwest::Response,
+    window: &Window,
+) -> Result<String, String> {
     let mut full_response = String::new();
-
-    // 5) chunk (小さい断片) を順次読み込む
     while let Some(chunk) = res.chunk().await.map_err(|e| e.to_string())? {
-        // UTF-8 に変換
         let chunk_str = match std::str::from_utf8(&chunk) {
             Ok(s) => s,
             Err(_) => continue,
         };
-
-        // 1チャンクには複数行を含む場合があるので、改行ごとに分割
         for line in chunk_str.split('\n') {
             let line = line.trim();
             if line.is_empty() {
                 continue;
             }
-            // OpenAI のストリーミング形式は "data: { JSON }" の形
             if let Some(json_str) = line.strip_prefix("data: ") {
                 if json_str == "[DONE]" {
-                    // ストリーミング完了
                     break;
                 }
-
-                // JSONとしてパース
                 let parsed: serde_json::Value = match serde_json::from_str(json_str) {
                     Ok(val) => val,
                     Err(_) => continue,
                 };
-
-                // 部分的な出力 (delta.content) を取り出す
                 if let Some(content) = parsed["choices"][0]["delta"]["content"].as_str() {
-                    // 部分文字列を full_response に追記
                     full_response.push_str(content);
-
-                    // 6) フロントエンドに部分的な文字列を送信 (event: "token")
                     let _ = window.emit("token", content.to_string());
                 }
             }
         }
     }
+    Ok(full_response)
+}
 
-    // 7) 応答を DB に保存（全チャンク受信完了後）
+fn store_response_to_db(
+    conn: &mut SqliteConnection,
+    input_session_id: &String,
+    question_text: &String,
+    full_response: &String,
+) -> Result<(), String> {
     let now = Utc::now().naive_utc();
     let new_chat = NewChatHistory {
-        session_id: &input_session_id,
-        question: &message,
-        answer: &full_response,
+        session_id: input_session_id,
+        question: question_text,
+        answer: full_response,
         created_at: now,
     };
     diesel::insert_into(chat_histories)
         .values(&new_chat)
-        .execute(&mut conn)
+        .execute(conn)
         .map_err(|e| e.to_string())?;
+    Ok(())
+}
 
-    // 8) ChatResponse を返す
+#[tauri::command]
+pub async fn stream_chatgpt_response(
+    window: Window,
+    input_session_id: String,
+    message: String,
+    base64_images: Option<Vec<String>>,
+    model: String,
+    api_key: String,
+) -> Result<ChatResponse, String> {
+    let database_path = get_database_path().map_err(|e| e.to_string())?;
+    let mut conn = establish_connection(&database_path).map_err(|e| e.to_string())?;
+
+    // Step 1: fetch session history
+    let session_history = fetch_session_history(&mut conn, &input_session_id)?;
+
+    // Step 2: build messages from history
+    let mut messages = build_messages_from_history(&session_history);
+
+    // Step 3: add user message
+    let user_msg = build_user_message(&message, base64_images);
+    messages.push(user_msg);
+
+    // Step 4: build request body
+    let request_body = build_request_body(&model, messages);
+
+    // Step 5: send streaming request
+    let res = fetch_streaming_response(&request_body, &api_key).await?;
+
+    // Step 6: process response
+    let full_response = process_stream_response(res, &window).await?;
+
+    // Step 7: store to DB
+    store_response_to_db(&mut conn, &input_session_id, &message, &full_response)?;
+
+    // Step 8: return
+    let now = Utc::now().naive_utc();
     Ok(ChatResponse {
         response: full_response,
         created_at: now.to_string(),
