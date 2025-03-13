@@ -5,7 +5,6 @@ mod generate_session_id;
 mod get_available_models;
 mod get_chat_history;
 mod get_chat_history_by_session;
-mod get_chatgpt_response;
 mod get_config;
 mod get_database_path;
 mod get_default_model;
@@ -23,7 +22,6 @@ use generate_session_id::generate_session_id;
 use get_available_models::get_available_models;
 use get_chat_history::get_chat_history;
 use get_chat_history_by_session::get_chat_history_by_session;
-use get_chatgpt_response::get_chatgpt_response;
 use get_database_path::get_database_path;
 use get_default_model::get_default_model;
 use get_openai_api_key::get_openai_api_key;
@@ -63,7 +61,6 @@ pub fn run() {
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
-            get_chatgpt_response,
             get_chat_history,
             generate_session_id,
             get_available_models,
