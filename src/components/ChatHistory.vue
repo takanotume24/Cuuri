@@ -9,13 +9,17 @@
             <div class="gpt-response bg-secondary text-white p-2 rounded" v-html="entry.answer"></div>
         </div>
 
-        <!-- ★ 新たに追加: ストリーミング中の回答を一時表示する箇所 -->
+        <!-- ストリーミング中の回答を一時表示 -->
         <div v-if="streamingAnswer.trim() !== ''" class="chat-entry mb-3">
+            <!-- ★ ユーザーの質問を先頭に表示 -->
             <div class="user-message mb-1">
-                <strong>ChatGPT (generating...):</strong>
-                <div class="bg-secondary text-white p-2 rounded">
-                    {{ streamingAnswer }}
-                </div>
+                <strong>You:</strong>
+                <pre class="bg-light p-2 rounded">{{ lastUserQuestion }}</pre>
+            </div>
+
+            <div class="gpt-response bg-secondary text-white p-2 rounded">
+                <!-- Markdown レンダリング後のHTMLを v-html で差し込む -->
+                <div v-html="partialAnswerHtml"></div>
             </div>
         </div>
     </div>
@@ -25,10 +29,14 @@
 import { defineComponent, PropType } from 'vue';
 import { SessionId } from '../types';
 import { DatabaseChatEntry } from '../types';
+import { Markdown } from '../types';
 import dayjs from 'dayjs';
 
 // DBから履歴を取得する関数
 import { getDatabaseChatEntryBySession } from '../getDatabaseChatEntryBySession';
+
+// marked 等を使ったMarkdownレンダリング関数
+import { renderMarkdown } from '../renderMarkdown';
 
 export default defineComponent({
     name: 'ChatHistory',
@@ -41,12 +49,13 @@ export default defineComponent({
             type: [Object, null] as PropType<dayjs.Dayjs | null>,
             default: null
         },
-        /**
-         * ★ 新規追加:
-         * 親コンポーネントがストリーミング中に得た部分的な回答を
-         * リアルタイム表示するためのプロパティ
-         */
+        // ストリーミング中のテキスト
         streamingAnswer: {
+            type: String,
+            default: ''
+        },
+        // ★ 新たに追加: 「最後に送信されたユーザー質問」を受け取る
+        lastUserQuestion: {
             type: String,
             default: ''
         }
@@ -58,11 +67,11 @@ export default defineComponent({
     },
     watch: {
         // セッションIDが変わったときに履歴を更新
-        async currentSessionId(newVal: SessionId, _: SessionId) {
+        async currentSessionId(newVal: SessionId) {
             this.updateChatHistory(newVal);
         },
         // 新しい回答を受信したタイミングで履歴を再取得
-        lastAnswerReceivedTime(_, __) {
+        lastAnswerReceivedTime() {
             if (!this.currentSessionId) return;
             this.updateChatHistory(this.currentSessionId);
         }
@@ -73,16 +82,20 @@ export default defineComponent({
             return this.databaseChatEntryBySession.slice().sort((a, b) => {
                 return a.created_at.diff(b.created_at);
             });
+        },
+        // ストリーミング中のテキストをHTML化して返す
+        partialAnswerHtml(): string {
+            if (!this.streamingAnswer.trim()) return '';
+            return renderMarkdown(this.streamingAnswer as Markdown);
         }
     },
     methods: {
         async updateChatHistory(sessionId: SessionId) {
-            // DBから指定セッションのチャット履歴を取得
             const dbEntries = await getDatabaseChatEntryBySession(sessionId);
             if (!dbEntries) return;
             this.databaseChatEntryBySession = dbEntries;
         }
-    },
+    }
 });
 </script>
 

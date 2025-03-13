@@ -12,9 +12,9 @@
     <!-- 右側: チャット履歴 + 入力フォーム -->
     <main class="col-9 d-flex flex-column p-3">
       <header class="flex-grow-1 overflow-auto mb-3">
-        <!-- 履歴表示コンポーネント (streamingAnswer を渡す) -->
+        <!-- 履歴表示コンポーネント (streamingAnswer 等を渡す) -->
         <ChatHistory :currentSessionId="currentSessionId" :lastAnswerReceivedTime="lastAnswerReceivedTime"
-          :streamingAnswer="partialAnswer" />
+          :streamingAnswer="partialAnswer" :lastUserQuestion="lastUserQuestion" />
       </header>
 
       <!-- フッターにある入力フォーム -->
@@ -28,7 +28,6 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { SessionId, ModelName, EncodedImage } from '../types';
-// Tauri のイベント/Invoke を使用
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 
@@ -55,9 +54,9 @@ interface ComponentData {
   isApiKeySet: boolean;
   showDialog: boolean;
   lastAnswerReceivedTime: dayjs.Dayjs | null;
-
-  // ★ ストリーミング中の部分文章を保持する
   partialAnswer: string;
+  // ★ 追加: 「最後に送信されたユーザー質問」を保持するプロパティ
+  lastUserQuestion: string;
 }
 
 export default defineComponent({
@@ -76,12 +75,12 @@ export default defineComponent({
       isApiKeySet: false,
       showDialog: true,
       lastAnswerReceivedTime: null,
-
-      partialAnswer: '' // ストリーミング表示用
+      partialAnswer: '',
+      lastUserQuestion: ''
     };
   },
   async mounted() {
-    // 1) 起動時にAPIキーを確認し、なければ設定画面へ
+    // アプリ起動時にAPIキーを確認し、未設定なら Settings 画面へ
     const key = await getApiKey();
     if (!key) {
       this.isApiKeySet = false;
@@ -94,33 +93,34 @@ export default defineComponent({
     }
   },
   methods: {
-    // 設定画面へ移動
     goToSettings() {
       this.$router.push('/settings');
     },
 
     /**
-     * ユーザーがメッセージを送信したときに呼ばれるメソッド
+     * ユーザーがメッセージを送信したとき
      */
     async handleSubmit(input: string, EncodedImageList?: EncodedImage[]) {
       if (!this.currentSessionId) return;
       if (!input.trim()) return;
 
-      // APIキー
       const api_key = await getApiKey();
       if (!api_key) return;
+
+      // ★ 最後に送信されたユーザー質問をセット
+      this.lastUserQuestion = input;
 
       // ストリーミング用変数を初期化
       this.partialAnswer = '';
 
-      // 1) "token" イベントを購読して、トークン(部分回答)が来るたびに partialAnswer に追記
+      // "token" イベントを購読して、部分回答が来るたびに partialAnswer に追記する
       const unlisten = await listen<string>('token', (event) => {
         const tokenChunk = event.payload;
         this.partialAnswer += tokenChunk;
       });
 
       try {
-        // 2) Rust 側コマンドを呼び出してストリーミングを開始
+        // Rust 側コマンドを呼び出してストリーミングを開始
         const finalResponse = (await invoke('stream_chatgpt_response', {
           inputSessionId: this.currentSessionId,
           message: input,
@@ -129,34 +129,34 @@ export default defineComponent({
           base64Images: EncodedImageList
         })) as ChatResponse;
 
-        // 3) 全チャンク受信が完了すると Rust から最終回答が返る
-        //    -> DBには Rust 側ですでに保存済みなので、改めて履歴を取得
+        // 全チャンク受信が完了すると Rust から最終回答が返る
         this.lastAnswerReceivedTime = dayjs(finalResponse.created_at);
-
       } catch (error) {
         console.error('Error streaming:', error);
       } finally {
-        // 4) ストリーミング終了後にイベント購読を解除
+        // ストリーミング終了後にイベント購読を解除
         unlisten();
+        // 生成完了後に一時テキストを消す
+        this.partialAnswer = '';
       }
 
-      // 履歴再取得
+      // 履歴を再取得して表示を更新
       await this.loadChatHistory();
 
-      // UIをスクロール
+      // 下端へスクロール
       this.$nextTick(() => {
         this.scrollToBottom();
       });
     },
 
     /**
-     * セッション履歴を読み込む
+     * 全体のチャット履歴を取得し、最新セッションを選択する
      */
     async loadChatHistory() {
       const history = await getDatabaseChatEntryList();
       if (!history || history.length === 0) return;
 
-      // 最新セッションを選択
+      // 履歴を新しい順にして、先頭(最新)のセッションを選択
       const reversedHistory = history.reverse();
       this.currentSessionId = reversedHistory[0].session_id;
 
@@ -166,7 +166,7 @@ export default defineComponent({
     },
 
     /**
-     * 画面下へスクロール
+     * チャット画面を最下部までスクロール
      */
     scrollToBottom() {
       const chatHistoryElement = this.$el.querySelector('header');
@@ -174,7 +174,7 @@ export default defineComponent({
         chatHistoryElement.scrollTop = chatHistoryElement.scrollHeight;
       }
     }
-  },
+  }
 });
 </script>
 
