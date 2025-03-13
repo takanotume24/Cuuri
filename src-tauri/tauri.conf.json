@@ -25,10 +25,10 @@
       "csp": {
         "default-src": "'self'",
         "script-src": "'self'",
-        "style-src": "'self' 'unsafe-inline'",
+        "style-src": "'self'",
         "object-src": "'none'",
         "connect-src": "'self'",
-        "img-src": "'self' data:",
+        "img-src": "'self'",
         "frame-src": "'none'"
       }
     }
