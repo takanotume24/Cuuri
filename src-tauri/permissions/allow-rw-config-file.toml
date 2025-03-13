@@ -10,4 +10,4 @@ allow = [
 ]
 
 [[scope.allow]]
-path = "$HOME/**"
+path = "$HOME/.cuuri/config.toml"
