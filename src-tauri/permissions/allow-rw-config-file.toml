@@ -1,0 +1,13 @@
+[[permission]]
+identifier = "allow-rw-config-file"
+description = ""
+
+[permission.commands]
+allow = [
+  "set_openai_api_key",
+  "get_openai_api_key",
+  "get_default_model",
+]
+
+[[scope.allow]]
+path = "$HOME/.cuuri/config.toml"

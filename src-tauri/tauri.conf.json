@@ -14,11 +14,23 @@
       {
         "title": "Cuuri",
         "width": 1100,
-        "height": 600
+        "height": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true,
+        "visible": true
       }
     ],
     "security": {
-      "csp": null
+      "csp": {
+        "default-src": "'self'",
+        "script-src": "'self'",
+        "style-src": "'self'",
+        "object-src": "'none'",
+        "connect-src": "'self'",
+        "img-src": "'self'",
+        "frame-src": "'none'"
+      }
     }
   },
   "bundle": {

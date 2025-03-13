@@ -7,6 +7,9 @@ Cuuri is a GUI client for ChatGPT built with Tauri, Vue, and TypeScript.
 
 ![Screenshot](./public/screenshot.png)
 
+[!WARNING]
+Cuuri is in its early stages of development, and many features are missing. In particular, security features are incomplete and are currently being worked on. Please use at your own risk.
+
 ### Features
 
 - Privacy
@@ -29,20 +32,20 @@ Cuuri is a GUI client for ChatGPT built with Tauri, Vue, and TypeScript.
 1. Clone this repository.
 
     ```bash
-    $ https://github.com/takanotume24/Cuuri.git
-    $ cd Cuuri
+    https://github.com/takanotume24/Cuuri.git
+    cd Cuuri
     ```
 
 1. Install npm dependencies.
 
     ```bash
-    $ npm install
+    npm install
     ```
   
 1. Build the project.
 
     ```bash
-    $ npm run tauri build
+    npm run tauri build
     ```
 
 1. Run the built binary to install.
@@ -57,4 +60,3 @@ All Cuuri data is saved under `$HOME/.cuuri`. Typically, the following files are
 - `$HOME/.cuuri/config.toml`
   - `default_model`: You can set the model that is selected at startup. Make sure the model name matches the one shown in the list.
   - `openai_api_key`: Set your OpenAI API key here.
-

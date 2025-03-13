@@ -1,0 +1,11 @@
+[[permission]]
+identifier = "allow-get-available-models"
+description = ""
+
+[permission.commands]
+allow = [
+  "get_available_models",
+]
+
+[[scope.allow]]
+
