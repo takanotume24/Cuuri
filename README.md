@@ -7,8 +7,8 @@ Cuuri is a GUI client for ChatGPT built with Tauri, Vue, and TypeScript.
 
 ![Screenshot](./public/screenshot.png)
 
-[!WARNING]
-Cuuri is in its early stages of development, and many features are missing. In particular, security features are incomplete and are currently being worked on. Please use at your own risk.
+> [!WARNING]
+> Cuuri is in its early stages of development, and many features are missing. In particular, security features are incomplete and are currently being worked on. Please use at your own risk.
 
 ### Features
 
