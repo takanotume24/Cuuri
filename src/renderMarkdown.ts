@@ -1,8 +1,8 @@
 import { Marked } from "marked";
-import { Markdown } from "./types";
+import { Markdown, Html } from "./types";
 import DOMPurify from "dompurify";
 
-export function renderMarkdown(markdownText: Markdown): string {
+export function renderMarkdown(markdownText: Markdown): Html {
   const marked = new Marked();
 
   marked.use({
@@ -10,7 +10,7 @@ export function renderMarkdown(markdownText: Markdown): string {
   });
 
   const html = marked.parse(markdownText) as string;
-  const sanitized_html = DOMPurify.sanitize(html);
+  const sanitized_html = DOMPurify.sanitize(html) as Html;
 
   return sanitized_html;
 }
