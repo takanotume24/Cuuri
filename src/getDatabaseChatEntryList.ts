@@ -1,6 +1,6 @@
-import { invoke } from "@tauri-apps/api/core";
-import { DatabaseChatEntry, RawDatabaseChatEntry } from "./types";
-import { getDatabaseChatEntryFromRawDatabaseChatEntry } from "./getDatabaseChatEntryFromRawDatabaseChatEntry";
+import { invoke } from "npm:@tauri-apps/api/core";
+import { DatabaseChatEntry, RawDatabaseChatEntry } from "./types.ts";
+import { getDatabaseChatEntryFromRawDatabaseChatEntry } from "./getDatabaseChatEntryFromRawDatabaseChatEntry.ts";
 
 export async function getDatabaseChatEntryList(): Promise<
   DatabaseChatEntry[] | null

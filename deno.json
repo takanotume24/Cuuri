@@ -1,0 +1,9 @@
+{
+    "tasks": {
+      "dev": "deno run -A npm:vite",
+      "build": "deno check src/main.ts && deno run -A npm:vite build",
+      "preview": "deno run -A npm:vite preview",
+      "tauri": "deno run -A npm:@tauri-apps/cli"
+    },
+    "nodeModulesDir": "auto"
+}

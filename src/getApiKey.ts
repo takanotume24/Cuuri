@@ -1,5 +1,5 @@
-import { invoke } from "@tauri-apps/api/core";
-import { ApiKey } from "./types";
+import { invoke } from "npm:@tauri-apps/api/core";
+import { ApiKey } from "./types.ts";
 
 export async function getApiKey(): Promise<ApiKey | null> {
   try {

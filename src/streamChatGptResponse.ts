@@ -1,6 +1,6 @@
 // src/streamChatGptResponse.ts (あるいは getChatGptResponse.ts の修正版)
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { invoke } from "npm:@tauri-apps/api/core";
+import { listen } from "npm:@tauri-apps/api/event";
 import {
   SessionId,
   UserInput,
@@ -8,7 +8,7 @@ import {
   ApiKey,
   ChatResponse,
   EncodedImage,
-} from "./types";
+} from "./types.ts";
 
 /**
  * ChatGPTへの問い合わせをストリーミングで行い、

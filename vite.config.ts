@@ -1,12 +1,11 @@
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
-
-// @ts-expect-error process is a nodejs global
-const host = process.env.TAURI_DEV_HOST;
+import { defineConfig } from "npm:vite@^6.2.4";
+import vue from "npm:@vitejs/plugin-vue";
+import deno from "npm:@deno/vite-plugin";
+const host = Deno.env.get("TAURI_DEV_HOST");
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
-  plugins: [vue()],
+  plugins: [vue(), deno()],
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //

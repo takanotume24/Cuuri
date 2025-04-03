@@ -1,10 +1,10 @@
-import { createApp } from "vue";
+import { createApp } from "npm:vue";
 import App from "./App.vue";
-import { devtools } from "@vue/devtools";
-import router from "./router";
-import "bootstrap/dist/css/bootstrap.css";
+import { devtools } from "npm:@vue/devtools";
+import router from "./router.ts";
+import "npm:bootstrap/dist/css/bootstrap.css";
 
-if (process.env.NODE_ENV === "development") {
+if (Deno.env.get("NODE_ENV") === "development") {
   devtools.connect();
 }
 

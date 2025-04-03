@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "npm:@tauri-apps/api/core";
 
 export async function getAvailableModels(
   apiKey: string

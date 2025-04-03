@@ -1,6 +1,6 @@
-import { RawDatabaseChatEntry, DatabaseChatEntry } from "./types";
-import dayjs from "dayjs";
-import { renderMarkdown } from "./renderMarkdown";
+import { RawDatabaseChatEntry, DatabaseChatEntry } from "./types.ts";
+import dayjs from "npm:dayjs";
+import { renderMarkdown } from "./renderMarkdown.ts";
 
 export function getDatabaseChatEntryFromRawDatabaseChatEntry(
   rawDatabaseChatEntry: RawDatabaseChatEntry
