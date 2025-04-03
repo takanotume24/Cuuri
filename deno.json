@@ -1,4 +1,11 @@
 {
+    "imports": {
+      "@tauri-apps/api/core": "npm:@tauri-apps/api/core",
+      "vite-plugin-vue-devtools":"npm:vite-plugin-vue-devtools",
+      "@vitejs/plugin-vue":"npm:@vitejs/plugin-vue",
+      "vue": "npm:vue",
+      "bootstrap": "npm:bootstrap"
+    },
     "tasks": {
       "dev": "deno run -A npm:vite",
       "build": "deno check src/main.ts && deno run -A npm:vite build",

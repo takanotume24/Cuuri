@@ -1,11 +1,6 @@
-import { createApp } from "npm:vue";
+import { createApp } from "vue";
 import App from "./App.vue";
-import { devtools } from "npm:@vue/devtools";
 import router from "./router.ts";
-import "npm:bootstrap/dist/css/bootstrap.css";
-
-if (Deno.env.get("NODE_ENV") === "development") {
-  devtools.connect();
-}
+import "bootstrap/dist/css/bootstrap.css";
 
 createApp(App).use(router).mount("#app");

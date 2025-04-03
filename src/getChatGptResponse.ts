@@ -1,5 +1,11 @@
-import { invoke } from "npm:@tauri-apps/api/core";
-import { SessionId, UserInput, ModelName, ApiKey, ChatResponse } from "./types.ts";
+import { invoke } from "@tauri-apps/api/core";
+import {
+  SessionId,
+  UserInput,
+  ModelName,
+  ApiKey,
+  ChatResponse,
+} from "./types.ts";
 import { EncodedImage } from "./types.ts";
 
 export async function getChatGptResponse(

@@ -1,5 +1,5 @@
 // src/streamChatGptResponse.ts (あるいは getChatGptResponse.ts の修正版)
-import { invoke } from "npm:@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "npm:@tauri-apps/api/event";
 import {
   SessionId,
@@ -24,7 +24,7 @@ export async function streamChatGptResponse(
 ): Promise<ChatResponse | null> {
   try {
     // 1) 部分更新のためのイベント受信をセットアップ
-    let unlisten = await listen("token", (event) => {
+    const unlisten = await listen("token", (event) => {
       const tokenChunk = event.payload as string;
       // ここで受け取った文字列をコールバックでUIなどに反映
       onToken(tokenChunk);

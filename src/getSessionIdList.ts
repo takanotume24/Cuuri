@@ -1,4 +1,4 @@
-import { invoke } from "npm:@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import { SessionId } from "./types.ts";
 
 export async function getSessionIdList(): Promise<SessionId[] | null> {

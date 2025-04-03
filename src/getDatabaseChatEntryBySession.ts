@@ -1,4 +1,4 @@
-import { invoke } from "npm:@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import { RawDatabaseChatEntry } from "./types.ts";
 import { DatabaseChatEntry } from "./types.ts";
 import { getDatabaseChatEntryFromRawDatabaseChatEntry } from "./getDatabaseChatEntryFromRawDatabaseChatEntry.ts";
