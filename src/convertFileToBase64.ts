@@ -1,4 +1,4 @@
-import { EncodedImage } from "./types";
+import { EncodedImage } from "./types.ts";
 
 export const convertFileToBase64 = (file: File): Promise<EncodedImage> => {
   return new Promise((resolve, reject) => {

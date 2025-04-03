@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { ModelName } from "./types";
+import { ModelName } from "./types.ts";
 
 export async function getDefaultModel(): Promise<ModelName | null> {
   try {
