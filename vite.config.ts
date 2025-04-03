@@ -1,4 +1,4 @@
-import { defineConfig } from "npm:vite";
+import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import deno from "npm:@deno/vite-plugin";
 import vueDevTools from "vite-plugin-vue-devtools";

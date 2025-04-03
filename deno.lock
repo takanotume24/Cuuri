@@ -1678,10 +1678,12 @@
   },
   "workspace": {
     "dependencies": [
+      "npm:@deno/vite-plugin@*",
       "npm:@tauri-apps/api@*",
       "npm:@vitejs/plugin-vue@*",
       "npm:bootstrap@*",
       "npm:vite-plugin-vue-devtools@*",
+      "npm:vite@*",
       "npm:vue@*"
     ]
   }
