@@ -1,8 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
-import { RawDatabaseChatEntry } from "./types";
-import { DatabaseChatEntry } from "./types";
-import { getDatabaseChatEntryFromRawDatabaseChatEntry } from "./getDatabaseChatEntryFromRawDatabaseChatEntry";
-import { SessionId } from "./types";
+import { RawDatabaseChatEntry } from "./types.ts";
+import { DatabaseChatEntry } from "./types.ts";
+import { getDatabaseChatEntryFromRawDatabaseChatEntry } from "./getDatabaseChatEntryFromRawDatabaseChatEntry.ts";
+import { SessionId } from "./types.ts";
 
 export async function getDatabaseChatEntryBySession(session_id: SessionId) {
   try {

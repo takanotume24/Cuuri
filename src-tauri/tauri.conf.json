@@ -4,9 +4,9 @@
   "version": "0.2.5",
   "identifier": "com.takanotume24.cuuri",
   "build": {
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "deno task dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run build",
+    "beforeBuildCommand": "deno task build",
     "frontendDist": "../dist"
   },
   "app": {
