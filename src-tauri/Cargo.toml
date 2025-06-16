@@ -31,5 +31,5 @@ diesel = { version = "2.2.10", features = ["sqlite", "r2d2", "chrono"] }
 chrono = { version = "0.4.41", features = ["serde"] }
 dirs = "6.0.0"
 toml = "0.8.23"
-rusqlite = { version = "0.34.0", features = ["bundled"] }
+rusqlite = { version = "0.35.0", features = ["bundled"] }
 diesel_migrations = "2.2.0"
