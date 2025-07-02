@@ -6,7 +6,8 @@
     "@deno/vite-plugin": "npm:@deno/vite-plugin",
     "vite": "npm:vite",
     "vue": "npm:vue",
-    "bootstrap": "npm:bootstrap"
+    "bootstrap": "npm:bootstrap",
+    "vue-router": "npm:vue-router"
   },
   "tasks": {
     "dev": "deno run -A npm:vite",
