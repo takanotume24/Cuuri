@@ -1,0 +1,15 @@
+{
+  "name": "cuuri",
+  "version": "0.2.5",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@tauri-apps/api": "2.4.1",
+    "vite-plugin-vue-devtools": "7.7.2",
+    "@vitejs/plugin-vue": "5.2.3",
+    "@deno/vite-plugin": "1.0.4",
+    "vite": "6.2.4",
+    "vue": "3.5.13",
+    "bootstrap": "5.3.3"
+  }
+}
