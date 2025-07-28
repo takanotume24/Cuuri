@@ -9,7 +9,7 @@
     "@vitejs/plugin-vue": "6.0.0",
     "@deno/vite-plugin": "1.0.5",
     "vite": "7.0.0",
-    "vue": "3.5.17",
+    "vue": "3.5.18",
     "bootstrap": "5.3.7",
     "vue-router": "4.5.1"
   }
