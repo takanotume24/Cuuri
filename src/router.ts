@@ -1,8 +1,8 @@
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHistory, RouteRecordRaw, Router } from "vue-router";
 import HomeView from "./view/HomeView.vue";
 import SettingsView from "./view/SettingsView.vue";
 
-const routes = [
+const routes: RouteRecordRaw[] = [
   {
     path: "/",
     component: HomeView,
@@ -13,7 +13,7 @@ const routes = [
   },
 ];
 
-const router = createRouter({
+const router: Router = createRouter({
   history: createWebHistory(),
   routes,
 });
