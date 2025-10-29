@@ -53,7 +53,7 @@ jobs:
           workspaces: "src-tauri"
           key: ${{ matrix.platform }}-${{ matrix.args }}
 
-      - uses: tauri-apps/tauri-action@564aea5a8075c7a54c167bb0cf5b3255314a7f9d # v0.5.22
+      - uses: tauri-apps/tauri-action@3b50ac4d4512105f96edbaa78a6e2f9392805589 # v0.5.24
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
