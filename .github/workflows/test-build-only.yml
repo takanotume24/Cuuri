@@ -58,7 +58,7 @@ jobs:
           key: ${{ matrix.platform }}-${{ matrix.args }}
 
       # If tagName and releaseId are omitted tauri-action will only build the app and won't try to upload any assets.
-      - uses: tauri-apps/tauri-action@3b50ac4d4512105f96edbaa78a6e2f9392805589 # v0.5.24
+      - uses: tauri-apps/tauri-action@19b93bb55601e3e373a93cfb6eb4242e45f5af20 # v0.6.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
