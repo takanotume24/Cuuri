@@ -3,14 +3,26 @@
   "version": "0.2.5",
   "private": true,
   "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri": "tauri"
+  },
   "dependencies": {
     "@tauri-apps/api": "2.9.0",
-    "vite-plugin-vue-devtools": "8.0.5",
     "@vitejs/plugin-vue": "6.0.2",
-    "@deno/vite-plugin": "1.0.5",
-    "vite": "7.2.6",
-    "vue": "3.5.27",
     "bootstrap": "5.3.8",
+    "dayjs": "1.11.19",
+    "dompurify": "^3.3.1",
+    "marked": "^17.0.1",
+    "vite": "7.2.6",
+    "vite-plugin-vue-devtools": "8.0.5",
+    "vue": "3.5.27",
     "vue-router": "4.6.3"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.9.6",
+    "@types/node": "^25.0.9"
   }
 }

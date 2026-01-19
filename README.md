@@ -28,7 +28,7 @@ Cuuri is a GUI client for ChatGPT built with Tauri, Vue, and TypeScript.
 
 ### Build Instructions
 
-1. Install Deno by following the instructions at <https://docs.deno.com/runtime/getting_started/installation/>.
+1. Install pnpm by following the instructions at <https://pnpm.io/installation>.
 1. Install the necessary dependencies by following the guide at <https://v2.tauri.app/start/prerequisites/>.
 1. Clone this repository.
 
@@ -37,11 +37,12 @@ Cuuri is a GUI client for ChatGPT built with Tauri, Vue, and TypeScript.
     cd Cuuri
     ```
   
-1. Build the project.
+1. Install dependencies and build the project.
 
-    ```bash
-    deno task tauri build
-    ```
+  ```bash
+  pnpm install
+  pnpm tauri build
+  ```
 
 1. Run the built binary to install.
    - macOS: `src-tauri/target/release/bundle/dmg`
