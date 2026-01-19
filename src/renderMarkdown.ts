@@ -1,6 +1,6 @@
-import { Marked } from "npm:marked";
+import { Marked } from "marked";
 import { Markdown, Html } from "./types.ts";
-import DOMPurify from "npm:dompurify";
+import DOMPurify from "dompurify";
 
 export function renderMarkdown(markdownText: Markdown): Html {
   const marked = new Marked();
