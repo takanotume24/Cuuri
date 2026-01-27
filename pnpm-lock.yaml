@@ -36,8 +36,8 @@ importers:
         specifier: 3.5.27
         version: 3.5.27
       vue-router:
-        specifier: 4.6.3
-        version: 4.6.3(vue@3.5.27)
+        specifier: 4.6.4
+        version: 4.6.4(vue@3.5.27)
     devDependencies:
       '@tauri-apps/cli':
         specifier: 2.9.6
@@ -967,8 +967,8 @@ packages:
       yaml:
         optional: true
 
-  vue-router@4.6.3:
-    resolution: {integrity: sha512-ARBedLm9YlbvQomnmq91Os7ck6efydTSpRP3nuOKCvgJOHNrhRoJDSKtee8kcL1Vf7nz6U+PMBL+hTvR3bTVQg==}
+  vue-router@4.6.4:
+    resolution: {integrity: sha512-Hz9q5sa33Yhduglwz6g9skT8OBPii+4bFn88w6J+J4MfEo4KRRpmiNG/hHHkdbRFlLBOqxN8y8gf2Fb0MTUgVg==}
     peerDependencies:
       vue: ^3.5.0
 
@@ -1836,7 +1836,7 @@ snapshots:
       '@types/node': 25.0.9
       fsevents: 2.3.3
 
-  vue-router@4.6.3(vue@3.5.27):
+  vue-router@4.6.4(vue@3.5.27):
     dependencies:
       '@vue/devtools-api': 6.6.4
       vue: 3.5.27
