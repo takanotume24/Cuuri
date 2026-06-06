@@ -28,7 +28,7 @@ reqwest = { version = "0.13.1", features = ["json"] }
 tokio = "1.49.0"
 uuid = { version = "1.20.0", features = ["v4"] }
 diesel = { version = "2.2.12", features = ["sqlite", "r2d2", "chrono"] }
-chrono = { version = "0.4.42", features = ["serde"] }
+chrono = { version = "0.4.43", features = ["serde"] }
 dirs = "6.0.0"
 toml = "0.9.8"
 rusqlite = { version = "0.37.0", features = ["bundled"] }
