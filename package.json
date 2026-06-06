@@ -22,7 +22,7 @@
     "vue-router": "5.0.2"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "2.9.6",
+    "@tauri-apps/cli": "2.10.0",
     "@types/node": "^25.0.10"
   }
 }
