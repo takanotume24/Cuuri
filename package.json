@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@tauri-apps/api": "2.9.1",
-    "@vitejs/plugin-vue": "6.0.2",
+    "@vitejs/plugin-vue": "6.0.7",
     "bootstrap": "5.3.8",
     "dayjs": "1.11.19",
     "dompurify": "^3.4.0",
