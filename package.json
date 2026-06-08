@@ -13,7 +13,7 @@
     "@tauri-apps/api": "2.9.1",
     "@vitejs/plugin-vue": "6.0.2",
     "bootstrap": "5.3.8",
-    "dayjs": "1.11.19",
+    "dayjs": "1.11.21",
     "dompurify": "^3.4.0",
     "marked": "^17.0.1",
     "vite": "7.3.2",
